@@ -9,38 +9,922 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as VerifyLiteRouteImport } from './routes/verify-lite'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as ReportRouteImport } from './routes/report'
+import { Route as BlockchainRouteImport } from './routes/blockchain'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DashboardSettingsRouteImport } from './routes/dashboard/settings'
+import { Route as DashboardRegulatorRouteImport } from './routes/dashboard/regulator'
+import { Route as DashboardQrLibraryRouteImport } from './routes/dashboard/qr-library'
+import { Route as DashboardProfileRouteImport } from './routes/dashboard/profile'
+import { Route as DashboardPharmacyRouteImport } from './routes/dashboard/pharmacy'
+import { Route as DashboardPatientRouteImport } from './routes/dashboard/patient'
+import { Route as DashboardMonitoringRouteImport } from './routes/dashboard/monitoring'
+import { Route as DashboardManufacturerRouteImport } from './routes/dashboard/manufacturer'
+import { Route as DashboardBlockchainRouteImport } from './routes/dashboard/blockchain'
+import { Route as AuthVerifyMfaRouteImport } from './routes/auth/verify-mfa'
+import { Route as AuthSignupRouteImport } from './routes/auth/signup'
+import { Route as AuthResetPasswordRouteImport } from './routes/auth/reset-password'
+import { Route as AuthLoginRouteImport } from './routes/auth/login'
+import { Route as AuthForgotPasswordRouteImport } from './routes/auth/forgot-password'
+import { Route as ApiHealthRouteImport } from './routes/api/health'
+import { Route as ApiVerifyIndexRouteImport } from './routes/api/verify/index'
+import { Route as ApiVerifyHistoryRouteImport } from './routes/api/verify/history'
+import { Route as ApiRealtimeFeedRouteImport } from './routes/api/realtime/feed'
+import { Route as ApiManufacturerVerifyCompanyOtpRouteImport } from './routes/api/manufacturer/verify-company-otp'
+import { Route as ApiManufacturerStatsRouteImport } from './routes/api/manufacturer/stats'
+import { Route as ApiManufacturerSendCompanyOtpRouteImport } from './routes/api/manufacturer/send-company-otp'
+import { Route as ApiManufacturerRegisterCompanyRouteImport } from './routes/api/manufacturer/register-company'
+import { Route as ApiManufacturerRegisterBatchRouteImport } from './routes/api/manufacturer/register-batch'
+import { Route as ApiManufacturerProfileRouteImport } from './routes/api/manufacturer/profile'
+import { Route as ApiManufacturerDocumentsRouteImport } from './routes/api/manufacturer/documents'
+import { Route as ApiManufacturerComplianceRouteImport } from './routes/api/manufacturer/compliance'
+import { Route as ApiManufacturerBatchesRouteImport } from './routes/api/manufacturer/batches'
+import { Route as ApiManufacturerAuditLogsRouteImport } from './routes/api/manufacturer/audit-logs'
+import { Route as ApiHealthDatabaseRouteImport } from './routes/api/health/database'
+import { Route as ApiFraudMetricsRouteImport } from './routes/api/fraud/metrics'
+import { Route as ApiFraudAnalyzeRouteImport } from './routes/api/fraud/analyze'
+import { Route as ApiFraudAlertsRouteImport } from './routes/api/fraud/alerts'
+import { Route as ApiBlockchainStatusRouteImport } from './routes/api/blockchain/status'
+import { Route as ApiAuthSignupRouteImport } from './routes/api/auth/signup'
+import { Route as ApiAuthRefreshRouteImport } from './routes/api/auth/refresh'
+import { Route as ApiAuthProfileRouteImport } from './routes/api/auth/profile'
+import { Route as ApiAuthMfaResendRouteImport } from './routes/api/auth/mfa-resend'
+import { Route as ApiAuthMfaRouteImport } from './routes/api/auth/mfa'
+import { Route as ApiAuthMeRouteImport } from './routes/api/auth/me'
+import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
+import { Route as ApiAuthLoginRouteImport } from './routes/api/auth/login'
+import { Route as ApiAuthGoogleRouteImport } from './routes/api/auth/google'
+import { Route as ApiAuthChangePasswordRouteImport } from './routes/api/auth/change-password'
+import { Route as ApiAiInsightsRouteImport } from './routes/api/ai/insights'
+import { Route as ApiAdminDashboardRouteImport } from './routes/api/admin/dashboard'
+import { Route as ApiManufacturerProfileLogoUploadRouteImport } from './routes/api/manufacturer/profile.logo-upload'
+import { Route as ApiManufacturerProfileLogoImageRouteImport } from './routes/api/manufacturer/profile.logo-image'
+import { Route as ApiManufacturerProfileLogoRouteImport } from './routes/api/manufacturer/profile.logo'
+import { Route as ApiManufacturerDocumentsUploadRouteImport } from './routes/api/manufacturer/documents/upload'
+import { Route as ApiManufacturerDocumentsIdRouteImport } from './routes/api/manufacturer/documents.$id'
+import { Route as ApiManufacturerBatchIdRouteImport } from './routes/api/manufacturer/batch.$id'
+import { Route as ApiAdminRecallCreateRouteImport } from './routes/api/admin/recall/create'
+import { Route as ApiAdminPharmacyBlacklistRouteImport } from './routes/api/admin/pharmacy/blacklist'
+import { Route as ApiManufacturerBatchIdAssetsRouteImport } from './routes/api/manufacturer/batch.$id.assets'
+import { Route as ApiAdminDocumentsIdReviewRouteImport } from './routes/api/admin/documents.$id.review'
+import { Route as ApiAdminDocumentsIdRejectRouteImport } from './routes/api/admin/documents.$id.reject'
+import { Route as ApiAdminDocumentsIdExpireRouteImport } from './routes/api/admin/documents.$id.expire'
+import { Route as ApiAdminDocumentsIdApproveRouteImport } from './routes/api/admin/documents.$id.approve'
 
+const VerifyLiteRoute = VerifyLiteRouteImport.update({
+  id: '/verify-lite',
+  path: '/verify-lite',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReportRoute = ReportRouteImport.update({
+  id: '/report',
+  path: '/report',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BlockchainRoute = BlockchainRouteImport.update({
+  id: '/blockchain',
+  path: '/blockchain',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AboutRoute = AboutRouteImport.update({
+  id: '/about',
+  path: '/about',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardSettingsRoute = DashboardSettingsRouteImport.update({
+  id: '/dashboard/settings',
+  path: '/dashboard/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardRegulatorRoute = DashboardRegulatorRouteImport.update({
+  id: '/dashboard/regulator',
+  path: '/dashboard/regulator',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardQrLibraryRoute = DashboardQrLibraryRouteImport.update({
+  id: '/dashboard/qr-library',
+  path: '/dashboard/qr-library',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardProfileRoute = DashboardProfileRouteImport.update({
+  id: '/dashboard/profile',
+  path: '/dashboard/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardPharmacyRoute = DashboardPharmacyRouteImport.update({
+  id: '/dashboard/pharmacy',
+  path: '/dashboard/pharmacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardPatientRoute = DashboardPatientRouteImport.update({
+  id: '/dashboard/patient',
+  path: '/dashboard/patient',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardMonitoringRoute = DashboardMonitoringRouteImport.update({
+  id: '/dashboard/monitoring',
+  path: '/dashboard/monitoring',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardManufacturerRoute = DashboardManufacturerRouteImport.update({
+  id: '/dashboard/manufacturer',
+  path: '/dashboard/manufacturer',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardBlockchainRoute = DashboardBlockchainRouteImport.update({
+  id: '/dashboard/blockchain',
+  path: '/dashboard/blockchain',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthVerifyMfaRoute = AuthVerifyMfaRouteImport.update({
+  id: '/verify-mfa',
+  path: '/verify-mfa',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthSignupRoute = AuthSignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthResetPasswordRoute = AuthResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthLoginRoute = AuthLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
+  getParentRoute: () => AuthRoute,
+} as any)
+const ApiHealthRoute = ApiHealthRouteImport.update({
+  id: '/api/health',
+  path: '/api/health',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiVerifyIndexRoute = ApiVerifyIndexRouteImport.update({
+  id: '/api/verify/',
+  path: '/api/verify/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiVerifyHistoryRoute = ApiVerifyHistoryRouteImport.update({
+  id: '/api/verify/history',
+  path: '/api/verify/history',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiRealtimeFeedRoute = ApiRealtimeFeedRouteImport.update({
+  id: '/api/realtime/feed',
+  path: '/api/realtime/feed',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiManufacturerVerifyCompanyOtpRoute =
+  ApiManufacturerVerifyCompanyOtpRouteImport.update({
+    id: '/api/manufacturer/verify-company-otp',
+    path: '/api/manufacturer/verify-company-otp',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiManufacturerStatsRoute = ApiManufacturerStatsRouteImport.update({
+  id: '/api/manufacturer/stats',
+  path: '/api/manufacturer/stats',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiManufacturerSendCompanyOtpRoute =
+  ApiManufacturerSendCompanyOtpRouteImport.update({
+    id: '/api/manufacturer/send-company-otp',
+    path: '/api/manufacturer/send-company-otp',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiManufacturerRegisterCompanyRoute =
+  ApiManufacturerRegisterCompanyRouteImport.update({
+    id: '/api/manufacturer/register-company',
+    path: '/api/manufacturer/register-company',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiManufacturerRegisterBatchRoute =
+  ApiManufacturerRegisterBatchRouteImport.update({
+    id: '/api/manufacturer/register-batch',
+    path: '/api/manufacturer/register-batch',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiManufacturerProfileRoute = ApiManufacturerProfileRouteImport.update({
+  id: '/api/manufacturer/profile',
+  path: '/api/manufacturer/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiManufacturerDocumentsRoute =
+  ApiManufacturerDocumentsRouteImport.update({
+    id: '/api/manufacturer/documents',
+    path: '/api/manufacturer/documents',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiManufacturerComplianceRoute =
+  ApiManufacturerComplianceRouteImport.update({
+    id: '/api/manufacturer/compliance',
+    path: '/api/manufacturer/compliance',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiManufacturerBatchesRoute = ApiManufacturerBatchesRouteImport.update({
+  id: '/api/manufacturer/batches',
+  path: '/api/manufacturer/batches',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiManufacturerAuditLogsRoute =
+  ApiManufacturerAuditLogsRouteImport.update({
+    id: '/api/manufacturer/audit-logs',
+    path: '/api/manufacturer/audit-logs',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiHealthDatabaseRoute = ApiHealthDatabaseRouteImport.update({
+  id: '/database',
+  path: '/database',
+  getParentRoute: () => ApiHealthRoute,
+} as any)
+const ApiFraudMetricsRoute = ApiFraudMetricsRouteImport.update({
+  id: '/api/fraud/metrics',
+  path: '/api/fraud/metrics',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiFraudAnalyzeRoute = ApiFraudAnalyzeRouteImport.update({
+  id: '/api/fraud/analyze',
+  path: '/api/fraud/analyze',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiFraudAlertsRoute = ApiFraudAlertsRouteImport.update({
+  id: '/api/fraud/alerts',
+  path: '/api/fraud/alerts',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiBlockchainStatusRoute = ApiBlockchainStatusRouteImport.update({
+  id: '/api/blockchain/status',
+  path: '/api/blockchain/status',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthSignupRoute = ApiAuthSignupRouteImport.update({
+  id: '/api/auth/signup',
+  path: '/api/auth/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthRefreshRoute = ApiAuthRefreshRouteImport.update({
+  id: '/api/auth/refresh',
+  path: '/api/auth/refresh',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthProfileRoute = ApiAuthProfileRouteImport.update({
+  id: '/api/auth/profile',
+  path: '/api/auth/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthMfaResendRoute = ApiAuthMfaResendRouteImport.update({
+  id: '/api/auth/mfa-resend',
+  path: '/api/auth/mfa-resend',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthMfaRoute = ApiAuthMfaRouteImport.update({
+  id: '/api/auth/mfa',
+  path: '/api/auth/mfa',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthMeRoute = ApiAuthMeRouteImport.update({
+  id: '/api/auth/me',
+  path: '/api/auth/me',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthLogoutRoute = ApiAuthLogoutRouteImport.update({
+  id: '/api/auth/logout',
+  path: '/api/auth/logout',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthLoginRoute = ApiAuthLoginRouteImport.update({
+  id: '/api/auth/login',
+  path: '/api/auth/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthGoogleRoute = ApiAuthGoogleRouteImport.update({
+  id: '/api/auth/google',
+  path: '/api/auth/google',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthChangePasswordRoute = ApiAuthChangePasswordRouteImport.update({
+  id: '/api/auth/change-password',
+  path: '/api/auth/change-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAiInsightsRoute = ApiAiInsightsRouteImport.update({
+  id: '/api/ai/insights',
+  path: '/api/ai/insights',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAdminDashboardRoute = ApiAdminDashboardRouteImport.update({
+  id: '/api/admin/dashboard',
+  path: '/api/admin/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiManufacturerProfileLogoUploadRoute =
+  ApiManufacturerProfileLogoUploadRouteImport.update({
+    id: '/logo-upload',
+    path: '/logo-upload',
+    getParentRoute: () => ApiManufacturerProfileRoute,
+  } as any)
+const ApiManufacturerProfileLogoImageRoute =
+  ApiManufacturerProfileLogoImageRouteImport.update({
+    id: '/logo-image',
+    path: '/logo-image',
+    getParentRoute: () => ApiManufacturerProfileRoute,
+  } as any)
+const ApiManufacturerProfileLogoRoute =
+  ApiManufacturerProfileLogoRouteImport.update({
+    id: '/logo',
+    path: '/logo',
+    getParentRoute: () => ApiManufacturerProfileRoute,
+  } as any)
+const ApiManufacturerDocumentsUploadRoute =
+  ApiManufacturerDocumentsUploadRouteImport.update({
+    id: '/upload',
+    path: '/upload',
+    getParentRoute: () => ApiManufacturerDocumentsRoute,
+  } as any)
+const ApiManufacturerDocumentsIdRoute =
+  ApiManufacturerDocumentsIdRouteImport.update({
+    id: '/$id',
+    path: '/$id',
+    getParentRoute: () => ApiManufacturerDocumentsRoute,
+  } as any)
+const ApiManufacturerBatchIdRoute = ApiManufacturerBatchIdRouteImport.update({
+  id: '/api/manufacturer/batch/$id',
+  path: '/api/manufacturer/batch/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAdminRecallCreateRoute = ApiAdminRecallCreateRouteImport.update({
+  id: '/api/admin/recall/create',
+  path: '/api/admin/recall/create',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAdminPharmacyBlacklistRoute =
+  ApiAdminPharmacyBlacklistRouteImport.update({
+    id: '/api/admin/pharmacy/blacklist',
+    path: '/api/admin/pharmacy/blacklist',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiManufacturerBatchIdAssetsRoute =
+  ApiManufacturerBatchIdAssetsRouteImport.update({
+    id: '/assets',
+    path: '/assets',
+    getParentRoute: () => ApiManufacturerBatchIdRoute,
+  } as any)
+const ApiAdminDocumentsIdReviewRoute =
+  ApiAdminDocumentsIdReviewRouteImport.update({
+    id: '/api/admin/documents/$id/review',
+    path: '/api/admin/documents/$id/review',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiAdminDocumentsIdRejectRoute =
+  ApiAdminDocumentsIdRejectRouteImport.update({
+    id: '/api/admin/documents/$id/reject',
+    path: '/api/admin/documents/$id/reject',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiAdminDocumentsIdExpireRoute =
+  ApiAdminDocumentsIdExpireRouteImport.update({
+    id: '/api/admin/documents/$id/expire',
+    path: '/api/admin/documents/$id/expire',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiAdminDocumentsIdApproveRoute =
+  ApiAdminDocumentsIdApproveRouteImport.update({
+    id: '/api/admin/documents/$id/approve',
+    path: '/api/admin/documents/$id/approve',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
+  '/auth': typeof AuthRouteWithChildren
+  '/blockchain': typeof BlockchainRoute
+  '/report': typeof ReportRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/verify-lite': typeof VerifyLiteRoute
+  '/api/health': typeof ApiHealthRouteWithChildren
+  '/auth/forgot-password': typeof AuthForgotPasswordRoute
+  '/auth/login': typeof AuthLoginRoute
+  '/auth/reset-password': typeof AuthResetPasswordRoute
+  '/auth/signup': typeof AuthSignupRoute
+  '/auth/verify-mfa': typeof AuthVerifyMfaRoute
+  '/dashboard/blockchain': typeof DashboardBlockchainRoute
+  '/dashboard/manufacturer': typeof DashboardManufacturerRoute
+  '/dashboard/monitoring': typeof DashboardMonitoringRoute
+  '/dashboard/patient': typeof DashboardPatientRoute
+  '/dashboard/pharmacy': typeof DashboardPharmacyRoute
+  '/dashboard/profile': typeof DashboardProfileRoute
+  '/dashboard/qr-library': typeof DashboardQrLibraryRoute
+  '/dashboard/regulator': typeof DashboardRegulatorRoute
+  '/dashboard/settings': typeof DashboardSettingsRoute
+  '/api/admin/dashboard': typeof ApiAdminDashboardRoute
+  '/api/ai/insights': typeof ApiAiInsightsRoute
+  '/api/auth/change-password': typeof ApiAuthChangePasswordRoute
+  '/api/auth/google': typeof ApiAuthGoogleRoute
+  '/api/auth/login': typeof ApiAuthLoginRoute
+  '/api/auth/logout': typeof ApiAuthLogoutRoute
+  '/api/auth/me': typeof ApiAuthMeRoute
+  '/api/auth/mfa': typeof ApiAuthMfaRoute
+  '/api/auth/mfa-resend': typeof ApiAuthMfaResendRoute
+  '/api/auth/profile': typeof ApiAuthProfileRoute
+  '/api/auth/refresh': typeof ApiAuthRefreshRoute
+  '/api/auth/signup': typeof ApiAuthSignupRoute
+  '/api/blockchain/status': typeof ApiBlockchainStatusRoute
+  '/api/fraud/alerts': typeof ApiFraudAlertsRoute
+  '/api/fraud/analyze': typeof ApiFraudAnalyzeRoute
+  '/api/fraud/metrics': typeof ApiFraudMetricsRoute
+  '/api/health/database': typeof ApiHealthDatabaseRoute
+  '/api/manufacturer/audit-logs': typeof ApiManufacturerAuditLogsRoute
+  '/api/manufacturer/batches': typeof ApiManufacturerBatchesRoute
+  '/api/manufacturer/compliance': typeof ApiManufacturerComplianceRoute
+  '/api/manufacturer/documents': typeof ApiManufacturerDocumentsRouteWithChildren
+  '/api/manufacturer/profile': typeof ApiManufacturerProfileRouteWithChildren
+  '/api/manufacturer/register-batch': typeof ApiManufacturerRegisterBatchRoute
+  '/api/manufacturer/register-company': typeof ApiManufacturerRegisterCompanyRoute
+  '/api/manufacturer/send-company-otp': typeof ApiManufacturerSendCompanyOtpRoute
+  '/api/manufacturer/stats': typeof ApiManufacturerStatsRoute
+  '/api/manufacturer/verify-company-otp': typeof ApiManufacturerVerifyCompanyOtpRoute
+  '/api/realtime/feed': typeof ApiRealtimeFeedRoute
+  '/api/verify/history': typeof ApiVerifyHistoryRoute
+  '/api/verify/': typeof ApiVerifyIndexRoute
+  '/api/admin/pharmacy/blacklist': typeof ApiAdminPharmacyBlacklistRoute
+  '/api/admin/recall/create': typeof ApiAdminRecallCreateRoute
+  '/api/manufacturer/batch/$id': typeof ApiManufacturerBatchIdRouteWithChildren
+  '/api/manufacturer/documents/$id': typeof ApiManufacturerDocumentsIdRoute
+  '/api/manufacturer/documents/upload': typeof ApiManufacturerDocumentsUploadRoute
+  '/api/manufacturer/profile/logo': typeof ApiManufacturerProfileLogoRoute
+  '/api/manufacturer/profile/logo-image': typeof ApiManufacturerProfileLogoImageRoute
+  '/api/manufacturer/profile/logo-upload': typeof ApiManufacturerProfileLogoUploadRoute
+  '/api/admin/documents/$id/approve': typeof ApiAdminDocumentsIdApproveRoute
+  '/api/admin/documents/$id/expire': typeof ApiAdminDocumentsIdExpireRoute
+  '/api/admin/documents/$id/reject': typeof ApiAdminDocumentsIdRejectRoute
+  '/api/admin/documents/$id/review': typeof ApiAdminDocumentsIdReviewRoute
+  '/api/manufacturer/batch/$id/assets': typeof ApiManufacturerBatchIdAssetsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
+  '/auth': typeof AuthRouteWithChildren
+  '/blockchain': typeof BlockchainRoute
+  '/report': typeof ReportRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/verify-lite': typeof VerifyLiteRoute
+  '/api/health': typeof ApiHealthRouteWithChildren
+  '/auth/forgot-password': typeof AuthForgotPasswordRoute
+  '/auth/login': typeof AuthLoginRoute
+  '/auth/reset-password': typeof AuthResetPasswordRoute
+  '/auth/signup': typeof AuthSignupRoute
+  '/auth/verify-mfa': typeof AuthVerifyMfaRoute
+  '/dashboard/blockchain': typeof DashboardBlockchainRoute
+  '/dashboard/manufacturer': typeof DashboardManufacturerRoute
+  '/dashboard/monitoring': typeof DashboardMonitoringRoute
+  '/dashboard/patient': typeof DashboardPatientRoute
+  '/dashboard/pharmacy': typeof DashboardPharmacyRoute
+  '/dashboard/profile': typeof DashboardProfileRoute
+  '/dashboard/qr-library': typeof DashboardQrLibraryRoute
+  '/dashboard/regulator': typeof DashboardRegulatorRoute
+  '/dashboard/settings': typeof DashboardSettingsRoute
+  '/api/admin/dashboard': typeof ApiAdminDashboardRoute
+  '/api/ai/insights': typeof ApiAiInsightsRoute
+  '/api/auth/change-password': typeof ApiAuthChangePasswordRoute
+  '/api/auth/google': typeof ApiAuthGoogleRoute
+  '/api/auth/login': typeof ApiAuthLoginRoute
+  '/api/auth/logout': typeof ApiAuthLogoutRoute
+  '/api/auth/me': typeof ApiAuthMeRoute
+  '/api/auth/mfa': typeof ApiAuthMfaRoute
+  '/api/auth/mfa-resend': typeof ApiAuthMfaResendRoute
+  '/api/auth/profile': typeof ApiAuthProfileRoute
+  '/api/auth/refresh': typeof ApiAuthRefreshRoute
+  '/api/auth/signup': typeof ApiAuthSignupRoute
+  '/api/blockchain/status': typeof ApiBlockchainStatusRoute
+  '/api/fraud/alerts': typeof ApiFraudAlertsRoute
+  '/api/fraud/analyze': typeof ApiFraudAnalyzeRoute
+  '/api/fraud/metrics': typeof ApiFraudMetricsRoute
+  '/api/health/database': typeof ApiHealthDatabaseRoute
+  '/api/manufacturer/audit-logs': typeof ApiManufacturerAuditLogsRoute
+  '/api/manufacturer/batches': typeof ApiManufacturerBatchesRoute
+  '/api/manufacturer/compliance': typeof ApiManufacturerComplianceRoute
+  '/api/manufacturer/documents': typeof ApiManufacturerDocumentsRouteWithChildren
+  '/api/manufacturer/profile': typeof ApiManufacturerProfileRouteWithChildren
+  '/api/manufacturer/register-batch': typeof ApiManufacturerRegisterBatchRoute
+  '/api/manufacturer/register-company': typeof ApiManufacturerRegisterCompanyRoute
+  '/api/manufacturer/send-company-otp': typeof ApiManufacturerSendCompanyOtpRoute
+  '/api/manufacturer/stats': typeof ApiManufacturerStatsRoute
+  '/api/manufacturer/verify-company-otp': typeof ApiManufacturerVerifyCompanyOtpRoute
+  '/api/realtime/feed': typeof ApiRealtimeFeedRoute
+  '/api/verify/history': typeof ApiVerifyHistoryRoute
+  '/api/verify': typeof ApiVerifyIndexRoute
+  '/api/admin/pharmacy/blacklist': typeof ApiAdminPharmacyBlacklistRoute
+  '/api/admin/recall/create': typeof ApiAdminRecallCreateRoute
+  '/api/manufacturer/batch/$id': typeof ApiManufacturerBatchIdRouteWithChildren
+  '/api/manufacturer/documents/$id': typeof ApiManufacturerDocumentsIdRoute
+  '/api/manufacturer/documents/upload': typeof ApiManufacturerDocumentsUploadRoute
+  '/api/manufacturer/profile/logo': typeof ApiManufacturerProfileLogoRoute
+  '/api/manufacturer/profile/logo-image': typeof ApiManufacturerProfileLogoImageRoute
+  '/api/manufacturer/profile/logo-upload': typeof ApiManufacturerProfileLogoUploadRoute
+  '/api/admin/documents/$id/approve': typeof ApiAdminDocumentsIdApproveRoute
+  '/api/admin/documents/$id/expire': typeof ApiAdminDocumentsIdExpireRoute
+  '/api/admin/documents/$id/reject': typeof ApiAdminDocumentsIdRejectRoute
+  '/api/admin/documents/$id/review': typeof ApiAdminDocumentsIdReviewRoute
+  '/api/manufacturer/batch/$id/assets': typeof ApiManufacturerBatchIdAssetsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
+  '/auth': typeof AuthRouteWithChildren
+  '/blockchain': typeof BlockchainRoute
+  '/report': typeof ReportRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/verify-lite': typeof VerifyLiteRoute
+  '/api/health': typeof ApiHealthRouteWithChildren
+  '/auth/forgot-password': typeof AuthForgotPasswordRoute
+  '/auth/login': typeof AuthLoginRoute
+  '/auth/reset-password': typeof AuthResetPasswordRoute
+  '/auth/signup': typeof AuthSignupRoute
+  '/auth/verify-mfa': typeof AuthVerifyMfaRoute
+  '/dashboard/blockchain': typeof DashboardBlockchainRoute
+  '/dashboard/manufacturer': typeof DashboardManufacturerRoute
+  '/dashboard/monitoring': typeof DashboardMonitoringRoute
+  '/dashboard/patient': typeof DashboardPatientRoute
+  '/dashboard/pharmacy': typeof DashboardPharmacyRoute
+  '/dashboard/profile': typeof DashboardProfileRoute
+  '/dashboard/qr-library': typeof DashboardQrLibraryRoute
+  '/dashboard/regulator': typeof DashboardRegulatorRoute
+  '/dashboard/settings': typeof DashboardSettingsRoute
+  '/api/admin/dashboard': typeof ApiAdminDashboardRoute
+  '/api/ai/insights': typeof ApiAiInsightsRoute
+  '/api/auth/change-password': typeof ApiAuthChangePasswordRoute
+  '/api/auth/google': typeof ApiAuthGoogleRoute
+  '/api/auth/login': typeof ApiAuthLoginRoute
+  '/api/auth/logout': typeof ApiAuthLogoutRoute
+  '/api/auth/me': typeof ApiAuthMeRoute
+  '/api/auth/mfa': typeof ApiAuthMfaRoute
+  '/api/auth/mfa-resend': typeof ApiAuthMfaResendRoute
+  '/api/auth/profile': typeof ApiAuthProfileRoute
+  '/api/auth/refresh': typeof ApiAuthRefreshRoute
+  '/api/auth/signup': typeof ApiAuthSignupRoute
+  '/api/blockchain/status': typeof ApiBlockchainStatusRoute
+  '/api/fraud/alerts': typeof ApiFraudAlertsRoute
+  '/api/fraud/analyze': typeof ApiFraudAnalyzeRoute
+  '/api/fraud/metrics': typeof ApiFraudMetricsRoute
+  '/api/health/database': typeof ApiHealthDatabaseRoute
+  '/api/manufacturer/audit-logs': typeof ApiManufacturerAuditLogsRoute
+  '/api/manufacturer/batches': typeof ApiManufacturerBatchesRoute
+  '/api/manufacturer/compliance': typeof ApiManufacturerComplianceRoute
+  '/api/manufacturer/documents': typeof ApiManufacturerDocumentsRouteWithChildren
+  '/api/manufacturer/profile': typeof ApiManufacturerProfileRouteWithChildren
+  '/api/manufacturer/register-batch': typeof ApiManufacturerRegisterBatchRoute
+  '/api/manufacturer/register-company': typeof ApiManufacturerRegisterCompanyRoute
+  '/api/manufacturer/send-company-otp': typeof ApiManufacturerSendCompanyOtpRoute
+  '/api/manufacturer/stats': typeof ApiManufacturerStatsRoute
+  '/api/manufacturer/verify-company-otp': typeof ApiManufacturerVerifyCompanyOtpRoute
+  '/api/realtime/feed': typeof ApiRealtimeFeedRoute
+  '/api/verify/history': typeof ApiVerifyHistoryRoute
+  '/api/verify/': typeof ApiVerifyIndexRoute
+  '/api/admin/pharmacy/blacklist': typeof ApiAdminPharmacyBlacklistRoute
+  '/api/admin/recall/create': typeof ApiAdminRecallCreateRoute
+  '/api/manufacturer/batch/$id': typeof ApiManufacturerBatchIdRouteWithChildren
+  '/api/manufacturer/documents/$id': typeof ApiManufacturerDocumentsIdRoute
+  '/api/manufacturer/documents/upload': typeof ApiManufacturerDocumentsUploadRoute
+  '/api/manufacturer/profile/logo': typeof ApiManufacturerProfileLogoRoute
+  '/api/manufacturer/profile/logo-image': typeof ApiManufacturerProfileLogoImageRoute
+  '/api/manufacturer/profile/logo-upload': typeof ApiManufacturerProfileLogoUploadRoute
+  '/api/admin/documents/$id/approve': typeof ApiAdminDocumentsIdApproveRoute
+  '/api/admin/documents/$id/expire': typeof ApiAdminDocumentsIdExpireRoute
+  '/api/admin/documents/$id/reject': typeof ApiAdminDocumentsIdRejectRoute
+  '/api/admin/documents/$id/review': typeof ApiAdminDocumentsIdReviewRoute
+  '/api/manufacturer/batch/$id/assets': typeof ApiManufacturerBatchIdAssetsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/about'
+    | '/auth'
+    | '/blockchain'
+    | '/report'
+    | '/sitemap.xml'
+    | '/verify-lite'
+    | '/api/health'
+    | '/auth/forgot-password'
+    | '/auth/login'
+    | '/auth/reset-password'
+    | '/auth/signup'
+    | '/auth/verify-mfa'
+    | '/dashboard/blockchain'
+    | '/dashboard/manufacturer'
+    | '/dashboard/monitoring'
+    | '/dashboard/patient'
+    | '/dashboard/pharmacy'
+    | '/dashboard/profile'
+    | '/dashboard/qr-library'
+    | '/dashboard/regulator'
+    | '/dashboard/settings'
+    | '/api/admin/dashboard'
+    | '/api/ai/insights'
+    | '/api/auth/change-password'
+    | '/api/auth/google'
+    | '/api/auth/login'
+    | '/api/auth/logout'
+    | '/api/auth/me'
+    | '/api/auth/mfa'
+    | '/api/auth/mfa-resend'
+    | '/api/auth/profile'
+    | '/api/auth/refresh'
+    | '/api/auth/signup'
+    | '/api/blockchain/status'
+    | '/api/fraud/alerts'
+    | '/api/fraud/analyze'
+    | '/api/fraud/metrics'
+    | '/api/health/database'
+    | '/api/manufacturer/audit-logs'
+    | '/api/manufacturer/batches'
+    | '/api/manufacturer/compliance'
+    | '/api/manufacturer/documents'
+    | '/api/manufacturer/profile'
+    | '/api/manufacturer/register-batch'
+    | '/api/manufacturer/register-company'
+    | '/api/manufacturer/send-company-otp'
+    | '/api/manufacturer/stats'
+    | '/api/manufacturer/verify-company-otp'
+    | '/api/realtime/feed'
+    | '/api/verify/history'
+    | '/api/verify/'
+    | '/api/admin/pharmacy/blacklist'
+    | '/api/admin/recall/create'
+    | '/api/manufacturer/batch/$id'
+    | '/api/manufacturer/documents/$id'
+    | '/api/manufacturer/documents/upload'
+    | '/api/manufacturer/profile/logo'
+    | '/api/manufacturer/profile/logo-image'
+    | '/api/manufacturer/profile/logo-upload'
+    | '/api/admin/documents/$id/approve'
+    | '/api/admin/documents/$id/expire'
+    | '/api/admin/documents/$id/reject'
+    | '/api/admin/documents/$id/review'
+    | '/api/manufacturer/batch/$id/assets'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/about'
+    | '/auth'
+    | '/blockchain'
+    | '/report'
+    | '/sitemap.xml'
+    | '/verify-lite'
+    | '/api/health'
+    | '/auth/forgot-password'
+    | '/auth/login'
+    | '/auth/reset-password'
+    | '/auth/signup'
+    | '/auth/verify-mfa'
+    | '/dashboard/blockchain'
+    | '/dashboard/manufacturer'
+    | '/dashboard/monitoring'
+    | '/dashboard/patient'
+    | '/dashboard/pharmacy'
+    | '/dashboard/profile'
+    | '/dashboard/qr-library'
+    | '/dashboard/regulator'
+    | '/dashboard/settings'
+    | '/api/admin/dashboard'
+    | '/api/ai/insights'
+    | '/api/auth/change-password'
+    | '/api/auth/google'
+    | '/api/auth/login'
+    | '/api/auth/logout'
+    | '/api/auth/me'
+    | '/api/auth/mfa'
+    | '/api/auth/mfa-resend'
+    | '/api/auth/profile'
+    | '/api/auth/refresh'
+    | '/api/auth/signup'
+    | '/api/blockchain/status'
+    | '/api/fraud/alerts'
+    | '/api/fraud/analyze'
+    | '/api/fraud/metrics'
+    | '/api/health/database'
+    | '/api/manufacturer/audit-logs'
+    | '/api/manufacturer/batches'
+    | '/api/manufacturer/compliance'
+    | '/api/manufacturer/documents'
+    | '/api/manufacturer/profile'
+    | '/api/manufacturer/register-batch'
+    | '/api/manufacturer/register-company'
+    | '/api/manufacturer/send-company-otp'
+    | '/api/manufacturer/stats'
+    | '/api/manufacturer/verify-company-otp'
+    | '/api/realtime/feed'
+    | '/api/verify/history'
+    | '/api/verify'
+    | '/api/admin/pharmacy/blacklist'
+    | '/api/admin/recall/create'
+    | '/api/manufacturer/batch/$id'
+    | '/api/manufacturer/documents/$id'
+    | '/api/manufacturer/documents/upload'
+    | '/api/manufacturer/profile/logo'
+    | '/api/manufacturer/profile/logo-image'
+    | '/api/manufacturer/profile/logo-upload'
+    | '/api/admin/documents/$id/approve'
+    | '/api/admin/documents/$id/expire'
+    | '/api/admin/documents/$id/reject'
+    | '/api/admin/documents/$id/review'
+    | '/api/manufacturer/batch/$id/assets'
+  id:
+    | '__root__'
+    | '/'
+    | '/about'
+    | '/auth'
+    | '/blockchain'
+    | '/report'
+    | '/sitemap.xml'
+    | '/verify-lite'
+    | '/api/health'
+    | '/auth/forgot-password'
+    | '/auth/login'
+    | '/auth/reset-password'
+    | '/auth/signup'
+    | '/auth/verify-mfa'
+    | '/dashboard/blockchain'
+    | '/dashboard/manufacturer'
+    | '/dashboard/monitoring'
+    | '/dashboard/patient'
+    | '/dashboard/pharmacy'
+    | '/dashboard/profile'
+    | '/dashboard/qr-library'
+    | '/dashboard/regulator'
+    | '/dashboard/settings'
+    | '/api/admin/dashboard'
+    | '/api/ai/insights'
+    | '/api/auth/change-password'
+    | '/api/auth/google'
+    | '/api/auth/login'
+    | '/api/auth/logout'
+    | '/api/auth/me'
+    | '/api/auth/mfa'
+    | '/api/auth/mfa-resend'
+    | '/api/auth/profile'
+    | '/api/auth/refresh'
+    | '/api/auth/signup'
+    | '/api/blockchain/status'
+    | '/api/fraud/alerts'
+    | '/api/fraud/analyze'
+    | '/api/fraud/metrics'
+    | '/api/health/database'
+    | '/api/manufacturer/audit-logs'
+    | '/api/manufacturer/batches'
+    | '/api/manufacturer/compliance'
+    | '/api/manufacturer/documents'
+    | '/api/manufacturer/profile'
+    | '/api/manufacturer/register-batch'
+    | '/api/manufacturer/register-company'
+    | '/api/manufacturer/send-company-otp'
+    | '/api/manufacturer/stats'
+    | '/api/manufacturer/verify-company-otp'
+    | '/api/realtime/feed'
+    | '/api/verify/history'
+    | '/api/verify/'
+    | '/api/admin/pharmacy/blacklist'
+    | '/api/admin/recall/create'
+    | '/api/manufacturer/batch/$id'
+    | '/api/manufacturer/documents/$id'
+    | '/api/manufacturer/documents/upload'
+    | '/api/manufacturer/profile/logo'
+    | '/api/manufacturer/profile/logo-image'
+    | '/api/manufacturer/profile/logo-upload'
+    | '/api/admin/documents/$id/approve'
+    | '/api/admin/documents/$id/expire'
+    | '/api/admin/documents/$id/reject'
+    | '/api/admin/documents/$id/review'
+    | '/api/manufacturer/batch/$id/assets'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AboutRoute: typeof AboutRoute
+  AuthRoute: typeof AuthRouteWithChildren
+  BlockchainRoute: typeof BlockchainRoute
+  ReportRoute: typeof ReportRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  VerifyLiteRoute: typeof VerifyLiteRoute
+  ApiHealthRoute: typeof ApiHealthRouteWithChildren
+  DashboardBlockchainRoute: typeof DashboardBlockchainRoute
+  DashboardManufacturerRoute: typeof DashboardManufacturerRoute
+  DashboardMonitoringRoute: typeof DashboardMonitoringRoute
+  DashboardPatientRoute: typeof DashboardPatientRoute
+  DashboardPharmacyRoute: typeof DashboardPharmacyRoute
+  DashboardProfileRoute: typeof DashboardProfileRoute
+  DashboardQrLibraryRoute: typeof DashboardQrLibraryRoute
+  DashboardRegulatorRoute: typeof DashboardRegulatorRoute
+  DashboardSettingsRoute: typeof DashboardSettingsRoute
+  ApiAdminDashboardRoute: typeof ApiAdminDashboardRoute
+  ApiAiInsightsRoute: typeof ApiAiInsightsRoute
+  ApiAuthChangePasswordRoute: typeof ApiAuthChangePasswordRoute
+  ApiAuthGoogleRoute: typeof ApiAuthGoogleRoute
+  ApiAuthLoginRoute: typeof ApiAuthLoginRoute
+  ApiAuthLogoutRoute: typeof ApiAuthLogoutRoute
+  ApiAuthMeRoute: typeof ApiAuthMeRoute
+  ApiAuthMfaRoute: typeof ApiAuthMfaRoute
+  ApiAuthMfaResendRoute: typeof ApiAuthMfaResendRoute
+  ApiAuthProfileRoute: typeof ApiAuthProfileRoute
+  ApiAuthRefreshRoute: typeof ApiAuthRefreshRoute
+  ApiAuthSignupRoute: typeof ApiAuthSignupRoute
+  ApiBlockchainStatusRoute: typeof ApiBlockchainStatusRoute
+  ApiFraudAlertsRoute: typeof ApiFraudAlertsRoute
+  ApiFraudAnalyzeRoute: typeof ApiFraudAnalyzeRoute
+  ApiFraudMetricsRoute: typeof ApiFraudMetricsRoute
+  ApiManufacturerAuditLogsRoute: typeof ApiManufacturerAuditLogsRoute
+  ApiManufacturerBatchesRoute: typeof ApiManufacturerBatchesRoute
+  ApiManufacturerComplianceRoute: typeof ApiManufacturerComplianceRoute
+  ApiManufacturerDocumentsRoute: typeof ApiManufacturerDocumentsRouteWithChildren
+  ApiManufacturerProfileRoute: typeof ApiManufacturerProfileRouteWithChildren
+  ApiManufacturerRegisterBatchRoute: typeof ApiManufacturerRegisterBatchRoute
+  ApiManufacturerRegisterCompanyRoute: typeof ApiManufacturerRegisterCompanyRoute
+  ApiManufacturerSendCompanyOtpRoute: typeof ApiManufacturerSendCompanyOtpRoute
+  ApiManufacturerStatsRoute: typeof ApiManufacturerStatsRoute
+  ApiManufacturerVerifyCompanyOtpRoute: typeof ApiManufacturerVerifyCompanyOtpRoute
+  ApiRealtimeFeedRoute: typeof ApiRealtimeFeedRoute
+  ApiVerifyHistoryRoute: typeof ApiVerifyHistoryRoute
+  ApiVerifyIndexRoute: typeof ApiVerifyIndexRoute
+  ApiAdminPharmacyBlacklistRoute: typeof ApiAdminPharmacyBlacklistRoute
+  ApiAdminRecallCreateRoute: typeof ApiAdminRecallCreateRoute
+  ApiManufacturerBatchIdRoute: typeof ApiManufacturerBatchIdRouteWithChildren
+  ApiAdminDocumentsIdApproveRoute: typeof ApiAdminDocumentsIdApproveRoute
+  ApiAdminDocumentsIdExpireRoute: typeof ApiAdminDocumentsIdExpireRoute
+  ApiAdminDocumentsIdRejectRoute: typeof ApiAdminDocumentsIdRejectRoute
+  ApiAdminDocumentsIdReviewRoute: typeof ApiAdminDocumentsIdReviewRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/verify-lite': {
+      id: '/verify-lite'
+      path: '/verify-lite'
+      fullPath: '/verify-lite'
+      preLoaderRoute: typeof VerifyLiteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/report': {
+      id: '/report'
+      path: '/report'
+      fullPath: '/report'
+      preLoaderRoute: typeof ReportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/blockchain': {
+      id: '/blockchain'
+      path: '/blockchain'
+      fullPath: '/blockchain'
+      preLoaderRoute: typeof BlockchainRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/about': {
+      id: '/about'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof AboutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,11 +932,548 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard/settings': {
+      id: '/dashboard/settings'
+      path: '/dashboard/settings'
+      fullPath: '/dashboard/settings'
+      preLoaderRoute: typeof DashboardSettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/regulator': {
+      id: '/dashboard/regulator'
+      path: '/dashboard/regulator'
+      fullPath: '/dashboard/regulator'
+      preLoaderRoute: typeof DashboardRegulatorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/qr-library': {
+      id: '/dashboard/qr-library'
+      path: '/dashboard/qr-library'
+      fullPath: '/dashboard/qr-library'
+      preLoaderRoute: typeof DashboardQrLibraryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/profile': {
+      id: '/dashboard/profile'
+      path: '/dashboard/profile'
+      fullPath: '/dashboard/profile'
+      preLoaderRoute: typeof DashboardProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/pharmacy': {
+      id: '/dashboard/pharmacy'
+      path: '/dashboard/pharmacy'
+      fullPath: '/dashboard/pharmacy'
+      preLoaderRoute: typeof DashboardPharmacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/patient': {
+      id: '/dashboard/patient'
+      path: '/dashboard/patient'
+      fullPath: '/dashboard/patient'
+      preLoaderRoute: typeof DashboardPatientRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/monitoring': {
+      id: '/dashboard/monitoring'
+      path: '/dashboard/monitoring'
+      fullPath: '/dashboard/monitoring'
+      preLoaderRoute: typeof DashboardMonitoringRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/manufacturer': {
+      id: '/dashboard/manufacturer'
+      path: '/dashboard/manufacturer'
+      fullPath: '/dashboard/manufacturer'
+      preLoaderRoute: typeof DashboardManufacturerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/blockchain': {
+      id: '/dashboard/blockchain'
+      path: '/dashboard/blockchain'
+      fullPath: '/dashboard/blockchain'
+      preLoaderRoute: typeof DashboardBlockchainRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/verify-mfa': {
+      id: '/auth/verify-mfa'
+      path: '/verify-mfa'
+      fullPath: '/auth/verify-mfa'
+      preLoaderRoute: typeof AuthVerifyMfaRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/auth/signup': {
+      id: '/auth/signup'
+      path: '/signup'
+      fullPath: '/auth/signup'
+      preLoaderRoute: typeof AuthSignupRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/auth/reset-password': {
+      id: '/auth/reset-password'
+      path: '/reset-password'
+      fullPath: '/auth/reset-password'
+      preLoaderRoute: typeof AuthResetPasswordRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/auth/login': {
+      id: '/auth/login'
+      path: '/login'
+      fullPath: '/auth/login'
+      preLoaderRoute: typeof AuthLoginRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/auth/forgot-password': {
+      id: '/auth/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/auth/forgot-password'
+      preLoaderRoute: typeof AuthForgotPasswordRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/api/health': {
+      id: '/api/health'
+      path: '/api/health'
+      fullPath: '/api/health'
+      preLoaderRoute: typeof ApiHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/verify/': {
+      id: '/api/verify/'
+      path: '/api/verify'
+      fullPath: '/api/verify/'
+      preLoaderRoute: typeof ApiVerifyIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/verify/history': {
+      id: '/api/verify/history'
+      path: '/api/verify/history'
+      fullPath: '/api/verify/history'
+      preLoaderRoute: typeof ApiVerifyHistoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/realtime/feed': {
+      id: '/api/realtime/feed'
+      path: '/api/realtime/feed'
+      fullPath: '/api/realtime/feed'
+      preLoaderRoute: typeof ApiRealtimeFeedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/manufacturer/verify-company-otp': {
+      id: '/api/manufacturer/verify-company-otp'
+      path: '/api/manufacturer/verify-company-otp'
+      fullPath: '/api/manufacturer/verify-company-otp'
+      preLoaderRoute: typeof ApiManufacturerVerifyCompanyOtpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/manufacturer/stats': {
+      id: '/api/manufacturer/stats'
+      path: '/api/manufacturer/stats'
+      fullPath: '/api/manufacturer/stats'
+      preLoaderRoute: typeof ApiManufacturerStatsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/manufacturer/send-company-otp': {
+      id: '/api/manufacturer/send-company-otp'
+      path: '/api/manufacturer/send-company-otp'
+      fullPath: '/api/manufacturer/send-company-otp'
+      preLoaderRoute: typeof ApiManufacturerSendCompanyOtpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/manufacturer/register-company': {
+      id: '/api/manufacturer/register-company'
+      path: '/api/manufacturer/register-company'
+      fullPath: '/api/manufacturer/register-company'
+      preLoaderRoute: typeof ApiManufacturerRegisterCompanyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/manufacturer/register-batch': {
+      id: '/api/manufacturer/register-batch'
+      path: '/api/manufacturer/register-batch'
+      fullPath: '/api/manufacturer/register-batch'
+      preLoaderRoute: typeof ApiManufacturerRegisterBatchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/manufacturer/profile': {
+      id: '/api/manufacturer/profile'
+      path: '/api/manufacturer/profile'
+      fullPath: '/api/manufacturer/profile'
+      preLoaderRoute: typeof ApiManufacturerProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/manufacturer/documents': {
+      id: '/api/manufacturer/documents'
+      path: '/api/manufacturer/documents'
+      fullPath: '/api/manufacturer/documents'
+      preLoaderRoute: typeof ApiManufacturerDocumentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/manufacturer/compliance': {
+      id: '/api/manufacturer/compliance'
+      path: '/api/manufacturer/compliance'
+      fullPath: '/api/manufacturer/compliance'
+      preLoaderRoute: typeof ApiManufacturerComplianceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/manufacturer/batches': {
+      id: '/api/manufacturer/batches'
+      path: '/api/manufacturer/batches'
+      fullPath: '/api/manufacturer/batches'
+      preLoaderRoute: typeof ApiManufacturerBatchesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/manufacturer/audit-logs': {
+      id: '/api/manufacturer/audit-logs'
+      path: '/api/manufacturer/audit-logs'
+      fullPath: '/api/manufacturer/audit-logs'
+      preLoaderRoute: typeof ApiManufacturerAuditLogsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/health/database': {
+      id: '/api/health/database'
+      path: '/database'
+      fullPath: '/api/health/database'
+      preLoaderRoute: typeof ApiHealthDatabaseRouteImport
+      parentRoute: typeof ApiHealthRoute
+    }
+    '/api/fraud/metrics': {
+      id: '/api/fraud/metrics'
+      path: '/api/fraud/metrics'
+      fullPath: '/api/fraud/metrics'
+      preLoaderRoute: typeof ApiFraudMetricsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/fraud/analyze': {
+      id: '/api/fraud/analyze'
+      path: '/api/fraud/analyze'
+      fullPath: '/api/fraud/analyze'
+      preLoaderRoute: typeof ApiFraudAnalyzeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/fraud/alerts': {
+      id: '/api/fraud/alerts'
+      path: '/api/fraud/alerts'
+      fullPath: '/api/fraud/alerts'
+      preLoaderRoute: typeof ApiFraudAlertsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/blockchain/status': {
+      id: '/api/blockchain/status'
+      path: '/api/blockchain/status'
+      fullPath: '/api/blockchain/status'
+      preLoaderRoute: typeof ApiBlockchainStatusRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/signup': {
+      id: '/api/auth/signup'
+      path: '/api/auth/signup'
+      fullPath: '/api/auth/signup'
+      preLoaderRoute: typeof ApiAuthSignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/refresh': {
+      id: '/api/auth/refresh'
+      path: '/api/auth/refresh'
+      fullPath: '/api/auth/refresh'
+      preLoaderRoute: typeof ApiAuthRefreshRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/profile': {
+      id: '/api/auth/profile'
+      path: '/api/auth/profile'
+      fullPath: '/api/auth/profile'
+      preLoaderRoute: typeof ApiAuthProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/mfa-resend': {
+      id: '/api/auth/mfa-resend'
+      path: '/api/auth/mfa-resend'
+      fullPath: '/api/auth/mfa-resend'
+      preLoaderRoute: typeof ApiAuthMfaResendRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/mfa': {
+      id: '/api/auth/mfa'
+      path: '/api/auth/mfa'
+      fullPath: '/api/auth/mfa'
+      preLoaderRoute: typeof ApiAuthMfaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/me': {
+      id: '/api/auth/me'
+      path: '/api/auth/me'
+      fullPath: '/api/auth/me'
+      preLoaderRoute: typeof ApiAuthMeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/logout': {
+      id: '/api/auth/logout'
+      path: '/api/auth/logout'
+      fullPath: '/api/auth/logout'
+      preLoaderRoute: typeof ApiAuthLogoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/login': {
+      id: '/api/auth/login'
+      path: '/api/auth/login'
+      fullPath: '/api/auth/login'
+      preLoaderRoute: typeof ApiAuthLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/google': {
+      id: '/api/auth/google'
+      path: '/api/auth/google'
+      fullPath: '/api/auth/google'
+      preLoaderRoute: typeof ApiAuthGoogleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/change-password': {
+      id: '/api/auth/change-password'
+      path: '/api/auth/change-password'
+      fullPath: '/api/auth/change-password'
+      preLoaderRoute: typeof ApiAuthChangePasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/ai/insights': {
+      id: '/api/ai/insights'
+      path: '/api/ai/insights'
+      fullPath: '/api/ai/insights'
+      preLoaderRoute: typeof ApiAiInsightsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/admin/dashboard': {
+      id: '/api/admin/dashboard'
+      path: '/api/admin/dashboard'
+      fullPath: '/api/admin/dashboard'
+      preLoaderRoute: typeof ApiAdminDashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/manufacturer/profile/logo-upload': {
+      id: '/api/manufacturer/profile/logo-upload'
+      path: '/logo-upload'
+      fullPath: '/api/manufacturer/profile/logo-upload'
+      preLoaderRoute: typeof ApiManufacturerProfileLogoUploadRouteImport
+      parentRoute: typeof ApiManufacturerProfileRoute
+    }
+    '/api/manufacturer/profile/logo-image': {
+      id: '/api/manufacturer/profile/logo-image'
+      path: '/logo-image'
+      fullPath: '/api/manufacturer/profile/logo-image'
+      preLoaderRoute: typeof ApiManufacturerProfileLogoImageRouteImport
+      parentRoute: typeof ApiManufacturerProfileRoute
+    }
+    '/api/manufacturer/profile/logo': {
+      id: '/api/manufacturer/profile/logo'
+      path: '/logo'
+      fullPath: '/api/manufacturer/profile/logo'
+      preLoaderRoute: typeof ApiManufacturerProfileLogoRouteImport
+      parentRoute: typeof ApiManufacturerProfileRoute
+    }
+    '/api/manufacturer/documents/upload': {
+      id: '/api/manufacturer/documents/upload'
+      path: '/upload'
+      fullPath: '/api/manufacturer/documents/upload'
+      preLoaderRoute: typeof ApiManufacturerDocumentsUploadRouteImport
+      parentRoute: typeof ApiManufacturerDocumentsRoute
+    }
+    '/api/manufacturer/documents/$id': {
+      id: '/api/manufacturer/documents/$id'
+      path: '/$id'
+      fullPath: '/api/manufacturer/documents/$id'
+      preLoaderRoute: typeof ApiManufacturerDocumentsIdRouteImport
+      parentRoute: typeof ApiManufacturerDocumentsRoute
+    }
+    '/api/manufacturer/batch/$id': {
+      id: '/api/manufacturer/batch/$id'
+      path: '/api/manufacturer/batch/$id'
+      fullPath: '/api/manufacturer/batch/$id'
+      preLoaderRoute: typeof ApiManufacturerBatchIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/admin/recall/create': {
+      id: '/api/admin/recall/create'
+      path: '/api/admin/recall/create'
+      fullPath: '/api/admin/recall/create'
+      preLoaderRoute: typeof ApiAdminRecallCreateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/admin/pharmacy/blacklist': {
+      id: '/api/admin/pharmacy/blacklist'
+      path: '/api/admin/pharmacy/blacklist'
+      fullPath: '/api/admin/pharmacy/blacklist'
+      preLoaderRoute: typeof ApiAdminPharmacyBlacklistRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/manufacturer/batch/$id/assets': {
+      id: '/api/manufacturer/batch/$id/assets'
+      path: '/assets'
+      fullPath: '/api/manufacturer/batch/$id/assets'
+      preLoaderRoute: typeof ApiManufacturerBatchIdAssetsRouteImport
+      parentRoute: typeof ApiManufacturerBatchIdRoute
+    }
+    '/api/admin/documents/$id/review': {
+      id: '/api/admin/documents/$id/review'
+      path: '/api/admin/documents/$id/review'
+      fullPath: '/api/admin/documents/$id/review'
+      preLoaderRoute: typeof ApiAdminDocumentsIdReviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/admin/documents/$id/reject': {
+      id: '/api/admin/documents/$id/reject'
+      path: '/api/admin/documents/$id/reject'
+      fullPath: '/api/admin/documents/$id/reject'
+      preLoaderRoute: typeof ApiAdminDocumentsIdRejectRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/admin/documents/$id/expire': {
+      id: '/api/admin/documents/$id/expire'
+      path: '/api/admin/documents/$id/expire'
+      fullPath: '/api/admin/documents/$id/expire'
+      preLoaderRoute: typeof ApiAdminDocumentsIdExpireRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/admin/documents/$id/approve': {
+      id: '/api/admin/documents/$id/approve'
+      path: '/api/admin/documents/$id/approve'
+      fullPath: '/api/admin/documents/$id/approve'
+      preLoaderRoute: typeof ApiAdminDocumentsIdApproveRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
+interface AuthRouteChildren {
+  AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
+  AuthLoginRoute: typeof AuthLoginRoute
+  AuthResetPasswordRoute: typeof AuthResetPasswordRoute
+  AuthSignupRoute: typeof AuthSignupRoute
+  AuthVerifyMfaRoute: typeof AuthVerifyMfaRoute
+}
+
+const AuthRouteChildren: AuthRouteChildren = {
+  AuthForgotPasswordRoute: AuthForgotPasswordRoute,
+  AuthLoginRoute: AuthLoginRoute,
+  AuthResetPasswordRoute: AuthResetPasswordRoute,
+  AuthSignupRoute: AuthSignupRoute,
+  AuthVerifyMfaRoute: AuthVerifyMfaRoute,
+}
+
+const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
+
+interface ApiHealthRouteChildren {
+  ApiHealthDatabaseRoute: typeof ApiHealthDatabaseRoute
+}
+
+const ApiHealthRouteChildren: ApiHealthRouteChildren = {
+  ApiHealthDatabaseRoute: ApiHealthDatabaseRoute,
+}
+
+const ApiHealthRouteWithChildren = ApiHealthRoute._addFileChildren(
+  ApiHealthRouteChildren,
+)
+
+interface ApiManufacturerDocumentsRouteChildren {
+  ApiManufacturerDocumentsIdRoute: typeof ApiManufacturerDocumentsIdRoute
+  ApiManufacturerDocumentsUploadRoute: typeof ApiManufacturerDocumentsUploadRoute
+}
+
+const ApiManufacturerDocumentsRouteChildren: ApiManufacturerDocumentsRouteChildren =
+  {
+    ApiManufacturerDocumentsIdRoute: ApiManufacturerDocumentsIdRoute,
+    ApiManufacturerDocumentsUploadRoute: ApiManufacturerDocumentsUploadRoute,
+  }
+
+const ApiManufacturerDocumentsRouteWithChildren =
+  ApiManufacturerDocumentsRoute._addFileChildren(
+    ApiManufacturerDocumentsRouteChildren,
+  )
+
+interface ApiManufacturerProfileRouteChildren {
+  ApiManufacturerProfileLogoRoute: typeof ApiManufacturerProfileLogoRoute
+  ApiManufacturerProfileLogoImageRoute: typeof ApiManufacturerProfileLogoImageRoute
+  ApiManufacturerProfileLogoUploadRoute: typeof ApiManufacturerProfileLogoUploadRoute
+}
+
+const ApiManufacturerProfileRouteChildren: ApiManufacturerProfileRouteChildren =
+  {
+    ApiManufacturerProfileLogoRoute: ApiManufacturerProfileLogoRoute,
+    ApiManufacturerProfileLogoImageRoute: ApiManufacturerProfileLogoImageRoute,
+    ApiManufacturerProfileLogoUploadRoute:
+      ApiManufacturerProfileLogoUploadRoute,
+  }
+
+const ApiManufacturerProfileRouteWithChildren =
+  ApiManufacturerProfileRoute._addFileChildren(
+    ApiManufacturerProfileRouteChildren,
+  )
+
+interface ApiManufacturerBatchIdRouteChildren {
+  ApiManufacturerBatchIdAssetsRoute: typeof ApiManufacturerBatchIdAssetsRoute
+}
+
+const ApiManufacturerBatchIdRouteChildren: ApiManufacturerBatchIdRouteChildren =
+  {
+    ApiManufacturerBatchIdAssetsRoute: ApiManufacturerBatchIdAssetsRoute,
+  }
+
+const ApiManufacturerBatchIdRouteWithChildren =
+  ApiManufacturerBatchIdRoute._addFileChildren(
+    ApiManufacturerBatchIdRouteChildren,
+  )
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AboutRoute: AboutRoute,
+  AuthRoute: AuthRouteWithChildren,
+  BlockchainRoute: BlockchainRoute,
+  ReportRoute: ReportRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
+  VerifyLiteRoute: VerifyLiteRoute,
+  ApiHealthRoute: ApiHealthRouteWithChildren,
+  DashboardBlockchainRoute: DashboardBlockchainRoute,
+  DashboardManufacturerRoute: DashboardManufacturerRoute,
+  DashboardMonitoringRoute: DashboardMonitoringRoute,
+  DashboardPatientRoute: DashboardPatientRoute,
+  DashboardPharmacyRoute: DashboardPharmacyRoute,
+  DashboardProfileRoute: DashboardProfileRoute,
+  DashboardQrLibraryRoute: DashboardQrLibraryRoute,
+  DashboardRegulatorRoute: DashboardRegulatorRoute,
+  DashboardSettingsRoute: DashboardSettingsRoute,
+  ApiAdminDashboardRoute: ApiAdminDashboardRoute,
+  ApiAiInsightsRoute: ApiAiInsightsRoute,
+  ApiAuthChangePasswordRoute: ApiAuthChangePasswordRoute,
+  ApiAuthGoogleRoute: ApiAuthGoogleRoute,
+  ApiAuthLoginRoute: ApiAuthLoginRoute,
+  ApiAuthLogoutRoute: ApiAuthLogoutRoute,
+  ApiAuthMeRoute: ApiAuthMeRoute,
+  ApiAuthMfaRoute: ApiAuthMfaRoute,
+  ApiAuthMfaResendRoute: ApiAuthMfaResendRoute,
+  ApiAuthProfileRoute: ApiAuthProfileRoute,
+  ApiAuthRefreshRoute: ApiAuthRefreshRoute,
+  ApiAuthSignupRoute: ApiAuthSignupRoute,
+  ApiBlockchainStatusRoute: ApiBlockchainStatusRoute,
+  ApiFraudAlertsRoute: ApiFraudAlertsRoute,
+  ApiFraudAnalyzeRoute: ApiFraudAnalyzeRoute,
+  ApiFraudMetricsRoute: ApiFraudMetricsRoute,
+  ApiManufacturerAuditLogsRoute: ApiManufacturerAuditLogsRoute,
+  ApiManufacturerBatchesRoute: ApiManufacturerBatchesRoute,
+  ApiManufacturerComplianceRoute: ApiManufacturerComplianceRoute,
+  ApiManufacturerDocumentsRoute: ApiManufacturerDocumentsRouteWithChildren,
+  ApiManufacturerProfileRoute: ApiManufacturerProfileRouteWithChildren,
+  ApiManufacturerRegisterBatchRoute: ApiManufacturerRegisterBatchRoute,
+  ApiManufacturerRegisterCompanyRoute: ApiManufacturerRegisterCompanyRoute,
+  ApiManufacturerSendCompanyOtpRoute: ApiManufacturerSendCompanyOtpRoute,
+  ApiManufacturerStatsRoute: ApiManufacturerStatsRoute,
+  ApiManufacturerVerifyCompanyOtpRoute: ApiManufacturerVerifyCompanyOtpRoute,
+  ApiRealtimeFeedRoute: ApiRealtimeFeedRoute,
+  ApiVerifyHistoryRoute: ApiVerifyHistoryRoute,
+  ApiVerifyIndexRoute: ApiVerifyIndexRoute,
+  ApiAdminPharmacyBlacklistRoute: ApiAdminPharmacyBlacklistRoute,
+  ApiAdminRecallCreateRoute: ApiAdminRecallCreateRoute,
+  ApiManufacturerBatchIdRoute: ApiManufacturerBatchIdRouteWithChildren,
+  ApiAdminDocumentsIdApproveRoute: ApiAdminDocumentsIdApproveRoute,
+  ApiAdminDocumentsIdExpireRoute: ApiAdminDocumentsIdExpireRoute,
+  ApiAdminDocumentsIdRejectRoute: ApiAdminDocumentsIdRejectRoute,
+  ApiAdminDocumentsIdReviewRoute: ApiAdminDocumentsIdReviewRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

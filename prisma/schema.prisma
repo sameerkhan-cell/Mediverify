@@ -1,0 +1,474 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  PATIENT
+  PHARMACY
+  MANUFACTURER
+  REGULATOR
+  ADMIN
+  SUPER_ADMIN
+  DRAP_ADMIN
+  FRAUD_ANALYST
+  AUDITOR
+}
+
+enum VerificationStatus {
+  GENUINE
+  DUPLICATE
+  SUSPECTED
+  INVALID
+}
+
+enum DocumentStatus {
+  PENDING
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  EXPIRED
+}
+
+enum ManufacturerDocumentType {
+  DRAP_LICENSE
+  WHO_GMP
+  ISO_CERTIFICATE
+  BUSINESS_REGISTRATION
+  TAX_REGISTRATION
+  MANUFACTURING_PERMIT
+  PRODUCT_QUALITY
+  ADDITIONAL
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String?
+  googleId      String?   @unique
+  name          String?
+  role          Role      @default(PATIENT)
+  status        String    @default("ACTIVE")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Profile Specifics
+  manufacturer  Manufacturer?
+  pharmacy      Pharmacy?
+  
+  // MFA / Verification
+  otpCode       String?
+  otpExpiresAt  DateTime?
+
+  reports       Report[]
+  verifications VerificationLog[]
+  notifications Notification[]
+  sessions      Session[]
+
+  @@map("user")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshToken String   @unique @db.VarChar(512)
+  userAgent    String?
+  ipAddress    String?
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+
+  @@index([userId])
+  @@map("session")
+}
+
+model Manufacturer {
+  id            String    @id @default(cuid())
+  userId        String    @unique
+  user          User      @relation(fields: [userId], references: [id])
+  companyName   String
+  licenseNumber String    @unique
+  address       String?
+
+  // Profile fields
+  companyLogo           String?   @db.Text
+  businessLocation      String?
+  industryType          String?
+  productCategories     String?   @db.Text
+  manufacturingCapacity String?
+  certifications        String?   @db.Text
+  operatingCountries    String?   @db.Text
+  registrationDate      DateTime?
+  companyDescription    String?   @db.Text
+
+  // Verification Fields
+  isVerified         Boolean   @default(false)
+  verificationStatus String    @default("UNREGISTERED") // UNREGISTERED, PENDING, VERIFIED, REJECTED
+  taxId              String?
+  registrationNumber String?
+  businessPhone      String?
+  businessEmail      String?
+  website            String?
+  verifiedAt         DateTime?
+  companyCode        String?   @unique // Generated once: MFG-GSK001 etc.
+
+  medicines     Medicine[]
+  documents     ManufacturerDocument[]
+
+  @@map("manufacturer")
+}
+
+model ExportAnalytics {
+  id             String   @id @default(cuid())
+  manufacturerId String
+  batchId        String
+  exportType     String   // PDF | ZIP
+  exportedBy     String   // userId
+  timestamp      DateTime @default(now())
+
+  @@index([manufacturerId])
+  @@index([batchId])
+  @@map("export_analytics")
+}
+
+model ManufacturerDocument {
+  id             String                   @id @default(cuid())
+  manufacturerId String
+  manufacturer   Manufacturer             @relation(fields: [manufacturerId], references: [id], onDelete: Cascade)
+  documentType   ManufacturerDocumentType
+  documentName   String
+  documentUrl    String                   @db.Text
+  fileSize       Int?
+  mimeType       String?
+  status         DocumentStatus           @default(PENDING)
+  uploadedAt     DateTime                 @default(now())
+  verifiedAt     DateTime?
+  verifiedBy     String?
+  expiryDate     DateTime?
+  remarks        String?                  @db.Text
+  deletedAt      DateTime?
+
+  auditLogs      DocumentAuditLog[]
+
+  @@index([manufacturerId])
+  @@index([status])
+  @@index([documentType])
+  @@map("manufacturer_document")
+}
+
+model DocumentAuditLog {
+  id             String          @id @default(cuid())
+  documentId     String
+  document       ManufacturerDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  manufacturerId String
+  action         String
+  oldStatus      DocumentStatus?
+  newStatus      DocumentStatus?
+  performedBy    String
+  remarks        String?         @db.Text
+  createdAt      DateTime        @default(now())
+
+  @@index([documentId])
+  @@index([manufacturerId])
+  @@map("document_audit_log")
+}
+
+model Pharmacy {
+  id            String    @id @default(cuid())
+  userId        String    @unique
+  user          User      @relation(fields: [userId], references: [id])
+  name          String
+  licenseNumber String    @unique
+  location      String?
+  riskScore     Float     @default(0)
+  isBlacklisted Boolean   @default(false)
+
+  @@map("pharmacy")
+}
+
+model Medicine {
+  id             String    @id @default(cuid())
+  name           String
+  genericName    String?
+  category       String?
+  dosage         String?
+  description    String?   @db.Text
+  manufacturerId String
+  manufacturer   Manufacturer @relation(fields: [manufacturerId], references: [id])
+  batches        Batch[]
+  createdAt      DateTime  @default(now())
+
+  @@index([manufacturerId])
+  @@map("medicine")
+}
+
+model Batch {
+  id                  String     @id @default(cuid())
+  batchNumber         String     @unique
+  medicineId          String
+  medicine            Medicine   @relation(fields: [medicineId], references: [id])
+  manufacturingDate   DateTime
+  expiryDate          DateTime
+  quantityBoxes       Int        @default(1)
+  pillsPerBox         Int        @default(20)
+  totalPillsGenerated Int        @default(0)
+  boxQRCode           String?
+  dosageStrength      String?
+  category            String?
+  productType         String?
+  status              String     @default("ACTIVE")           // ACTIVE, EXPIRED, RECALLED
+  medicineStatus      String     @default("MANUFACTURED")
+  blockchainStatus    String     @default("PENDING")
+  pills               Pill[]
+  qrAssets            QRAsset[]
+  auditLogs           AuditLog[]
+  isRecalled          Boolean    @default(false)
+  recallReason        String?
+  txHash              String?
+  createdAt           DateTime   @default(now())
+
+  @@index([batchNumber])
+  @@index([boxQRCode])
+  @@map("batch")
+}
+
+model Pill {
+  id                 String    @id @default(cuid())
+  batchId            String
+  batch              Batch     @relation(fields: [batchId], references: [id])
+  pillNumber         String
+  serialNumber       String?
+  qrCode             String    @unique
+  status             String    @default("ACTIVE")
+  scannedAt          DateTime?
+  scannedLocation    String?
+  verificationStatus String    @default("UNVERIFIED")
+  qrScanned          Boolean   @default(false)
+  blockchainTx       String?
+  verifications      VerificationLog[]
+  createdAt          DateTime  @default(now())
+
+  @@index([qrCode])
+  @@map("pill")
+}
+
+model QRDownload {
+  id            String    @id @default(cuid())
+  batchId       String
+  batchNumber   String
+  fileType      String
+  downloadUrl   String
+  createdAt     DateTime  @default(now())
+
+  @@map("qrdownload")
+}
+
+/// Tracks generated QR asset files per batch (box QR, pill QR sheets, zip)
+model QRAsset {
+  id        String   @id @default(cuid())
+  batchId   String
+  batch     Batch    @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  type      String   // BOX_QR | PILL_QR | PDF_SHEET | ZIP_EXPORT
+  fileUrl   String   @db.Text
+  metadata  String?  @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([batchId])
+  @@map("qrasset")
+}
+
+/// Audit trail for manufacturer actions on batches
+model AuditLog {
+  id             String   @id @default(cuid())
+  manufacturerId String
+  batchId        String?
+  batch          Batch?   @relation(fields: [batchId], references: [id], onDelete: SetNull)
+  action         String   // BATCH_CREATED | QR_GENERATED | PDF_EXPORTED | ZIP_EXPORTED
+  metadata       String?  @db.Text
+  ipAddress      String?
+  userAgent      String?
+  createdAt      DateTime @default(now())
+
+  @@index([manufacturerId])
+  @@index([batchId])
+  @@index([action])
+  @@map("auditlog")
+}
+
+model VerificationLog {
+  id            String             @id @default(cuid())
+  userId        String?
+  user          User?              @relation(fields: [userId], references: [id])
+  pillId        String?
+  pill          Pill?              @relation(fields: [pillId], references: [id])
+  code          String
+  type          String
+  status        VerificationStatus
+  location      String?
+  lat           Float?
+  lng           Float?
+  userAgent     String?
+  createdAt     DateTime           @default(now())
+
+  @@index([code])
+  @@index([userId])
+  @@index([pillId])
+  @@index([status])
+  @@map("verificationlog")
+}
+
+model FraudAlert {
+  id            String    @id @default(cuid())
+  alertType     String
+  qrCode        String?
+  medicineId    String?
+  pharmacyId    String?
+  region        String?
+  severity      String
+  riskScore     Int       @default(0)
+  message       String
+  metadata      String?   @db.Text
+  isResolved    Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+
+  @@map("fraudalert")
+}
+
+model RiskScore {
+  id            String    @id @default(cuid())
+  entityType    String
+  entityId      String
+  score         Int       @default(0)
+  riskLevel     String
+  reasons       String?   @db.Text
+  updatedAt     DateTime  @updatedAt
+
+  @@map("riskscore")
+}
+
+model GeoAnalytics {
+  id               String    @id @default(cuid())
+  qrCode           String
+  previousLocation String?
+  currentLocation  String
+  distance         Float?
+  suspicious       Boolean   @default(false)
+  createdAt        DateTime  @default(now())
+
+  @@map("geoanalytics")
+}
+
+model Recall {
+  id            String    @id @default(cuid())
+  medicineId    String?
+  batchId       String?
+  severity      String
+  reason        String    @db.Text
+  regions       String?
+  issuedBy      String
+  status        String    @default("ACTIVE")
+  createdAt     DateTime  @default(now())
+
+  @@map("recall")
+}
+
+model AdminActionLog {
+  id            String    @id @default(cuid())
+  adminId       String
+  actionType    String
+  targetType    String
+  targetId      String
+  metadata      String?   @db.Text
+  createdAt     DateTime  @default(now())
+
+  @@map("adminactionlog")
+}
+
+model SurveillanceEvent {
+  id               String    @id @default(cuid())
+  eventType        String
+  severity         String
+  region           String?
+  metadata         String?   @db.Text
+  blockchainHash   String?
+  createdAt        DateTime  @default(now())
+
+  @@map("surveillanceevent")
+}
+
+model Report {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  medicineName  String
+  batchNumber   String?
+  pharmacyName  String?
+  description   String    @db.Text
+  status        String    @default("PENDING")
+  createdAt     DateTime  @default(now())
+
+  @@map("report")
+}
+
+model AIInsight {
+  id            String    @id @default(cuid())
+  insightType   String
+  severity      String
+  prediction    String    @db.Text
+  confidenceScore Float   @default(0)
+  region        String?
+  metadata      String?   @db.Text
+  createdAt     DateTime  @default(now())
+
+  @@map("aiinsight")
+}
+
+model LiveEvent {
+  id            String    @id @default(cuid())
+  eventType     String
+  entityType    String?
+  entityId      String?
+  payload       String?   @db.Text
+  createdAt     DateTime  @default(now())
+
+  @@map("liveevent")
+}
+
+model RiskForecast {
+  id            String    @id @default(cuid())
+  region        String
+  medicineId    String?
+  predictedRisk Int       @default(0)
+  confidence    Float     @default(0)
+  generatedAt   DateTime  @default(now())
+
+  @@map("riskforecast")
+}
+
+model Notification {
+  id            String    @id @default(cuid())
+  userId        String?
+  user          User?     @relation(fields: [userId], references: [id])
+  targetRole    Role?
+  title         String
+  message       String
+  isRead        Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+
+  @@index([userId])
+  @@map("notification")
+}
+
+model BlockchainTransaction {
+  id            String    @id @default(cuid())
+  txHash        String    @unique
+  type          String
+  status        String    @default("CONFIRMED")
+  createdAt     DateTime  @default(now())
+
+  @@map("blockchaintransaction")
+}

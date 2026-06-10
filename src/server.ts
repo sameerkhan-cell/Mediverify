@@ -1,3 +1,4 @@
+import "./server/load-env";
 import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
@@ -12,8 +13,14 @@ let serverEntryPromise: Promise<ServerEntry> | undefined;
 async function getServerEntry(): Promise<ServerEntry> {
   if (!serverEntryPromise) {
     serverEntryPromise = import("@tanstack/react-start/server-entry").then(
-      (m) => ((m as { default?: ServerEntry }).default ?? (m as unknown as ServerEntry)),
-    );
+      (m) => {
+        console.log("Successfully imported server-entry");
+        return ((m as { default?: ServerEntry }).default ?? (m as unknown as ServerEntry));
+      }
+    ).catch(err => {
+      console.error("Failed to import server-entry:", err);
+      throw err;
+    });
   }
   return serverEntryPromise;
 }

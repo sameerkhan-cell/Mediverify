@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=mysql://user:pass@db:3306/mediverify
+      - REDIS_URL=redis://cache:6379
+    depends_on:
+      - db
+      - cache
+
+  db:
+    image: mysql:8
+    environment:
+      - MYSQL_DATABASE=mediverify
+      - MYSQL_ROOT_PASSWORD=pass
+    ports:
+      - "3306:3306"
+
+  cache:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+
+  worker:
+    build: .
+    command: ["node", ".output/server/index.mjs", "--worker"]
+    depends_on:
+      - db
+      - cache
