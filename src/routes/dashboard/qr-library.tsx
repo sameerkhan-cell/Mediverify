@@ -5,7 +5,7 @@ import {
     QrCode, Download, Printer, Eye, Search, Filter, Package, Calendar,
     ShieldCheck, Hash, ChevronDown, ChevronRight, FileText, Archive,
     CheckCircle2, AlertTriangle, Clock, X, Pill, Box, ExternalLink,
-    ArrowDown, ZoomIn, Loader2
+    ArrowDown, ZoomIn, Loader2, Table
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { DASH_NAV } from "@/config/nav";
@@ -49,19 +49,62 @@ const STATUS_CFG = {
 // ── Detail Panel ──────────────────────────────────────────────────────────────
 
 function BatchDetailPanel({
-    batch,
-    pills,
+    batch: initialBatch,
     onClose,
 }: {
     batch: MedicineBatch;
-    pills: PillRecord[];
     onClose: () => void;
 }) {
+    const [batch, setBatch] = useState<MedicineBatch>(initialBatch);
+    const [batchPills, setBatchPills] = useState<PillRecord[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
     const boxQrRef = useRef<HTMLDivElement>(null);
     const pillQrRef = useRef<HTMLDivElement>(null);
-    const batchPills = pills.filter((p) => p.medicineId === batch.id);
     const samplePill = batchPills[0];
-    const status = STATUS_CFG[batch.status] ?? STATUS_CFG.Active;
+    const status = STATUS_CFG[batch.status as keyof typeof STATUS_CFG] ?? STATUS_CFG.Active;
+
+    useEffect(() => {
+        const fetchFullDetails = async () => {
+            setIsLoading(true);
+            try {
+                const sessionStr = localStorage.getItem("mediverify_session") || sessionStorage.getItem("mediverify_session");
+                const token = sessionStr ? JSON.parse(sessionStr).token : "";
+
+                const res = await fetch(`/api/manufacturer/batch/${initialBatch.id}`, {
+                    headers: { "Authorization": `Bearer ${token}` }
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    const b = data.data;
+                    setBatch({
+                        ...initialBatch,
+                        txHash: b.txHash || initialBatch.txHash,
+                        qrGenerationStatus: (b.blockchainStatus || "completed").toLowerCase(),
+                        totalPills: b._count?.pills ?? b.totalPillsGenerated ?? initialBatch.totalPills,
+                    });
+
+                    if (b.pills) {
+                        setBatchPills(b.pills.map((p: any) => ({
+                            id: p.id,
+                            medicineId: b.id,
+                            pillNumber: p.pillNumber,
+                            qrStatus: p.qrStatus?.toLowerCase() || "active",
+                            pillQrCode: p.qrCode
+                        })));
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to fetch batch pills:", err);
+                toast.error("Failed to load full pill records.");
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchFullDetails();
+    }, [initialBatch.id]);
 
     const getCanvas = (ref: React.RefObject<HTMLDivElement>) =>
         ref.current?.querySelector("canvas") as HTMLCanvasElement | null;
@@ -92,25 +135,81 @@ function BatchDetailPanel({
     };
 
     const downloadPillSheetPdf = async () => {
-        const canvas = getCanvas(pillQrRef);
-        if (!canvas) { toast.error("QR canvas not ready"); return; }
-        const dataUrl = canvas.toDataURL("image/png");
-        const t = toast.loading("Generating Pill Sheet PDF…");
+        const pillCount = batch.totalPills || batchPills.length;
+        const isLarge = pillCount > 1000;
+        const sessionStr = localStorage.getItem("mediverify_session") || sessionStorage.getItem("mediverify_session");
+        const token = sessionStr ? JSON.parse(sessionStr).token : "";
+
+        const t = toast.loading(isLarge
+            ? `Generating Industrial Sheet (${pillCount.toLocaleString()} pills)... Please wait, do not close.`
+            : "Generating Pill Sheet PDF…");
         try {
-            const blob = await PrintingService.generatePillQrSheetPdf(batch, batchPills, dataUrl);
-            saveAs(blob, `PillSheet_${batch.batchNumber}.pdf`);
+            if (isLarge) {
+                // 1. Initial Request (Triggers generation on server)
+                // Fire and forget to start the process
+                fetch(`/api/manufacturer/batch/${batch.id}?download=pdf`, {
+                    headers: { "Authorization": `Bearer ${token}` }
+                }).catch(() => { });
+
+                // 2. Polling Loop
+                let isReady = false;
+                let attempts = 0;
+                while (!isReady && attempts < 120) { // Max 10 mins
+                    await new Promise(r => setTimeout(r, 5000)); // Poll every 5s
+                    const res = await fetch(`/api/manufacturer/batch/${batch.id}?download=pdf&check=true`, {
+                        headers: { "Authorization": `Bearer ${token}` }
+                    });
+                    const data = await res.json();
+                    if (data.ready) isReady = true;
+                    attempts++;
+                    if (attempts % 6 === 0) toast.message(`Still processing... (${attempts * 5}s)`, { id: t });
+                }
+
+                if (!isReady) throw new Error("Server timeout");
+
+                // 3. Final Fetch (Instant from Cache)
+                const res = await fetch(`/api/manufacturer/batch/${batch.id}?download=pdf`, {
+                    headers: { "Authorization": `Bearer ${token}` }
+                });
+                const blob = await res.blob();
+                saveAs(blob, `PillSheet_${batch.batchNumber}.pdf`);
+            } else {
+                const blob = await PrintingService.generatePillQrSheetPdf(batch, batchPills);
+                saveAs(blob, `PillSheet_${batch.batchNumber}.pdf`);
+            }
             toast.dismiss(t);
-            toast.success("Pill Sheet PDF downloaded!");
+            toast.success("Pill Sheet downloaded!");
+        } catch (err) {
+            toast.dismiss(t);
+            toast.error("Generation failed. Please try again in 1 minute.");
+        }
+    };
+
+    const downloadFullRegistryCsv = async () => {
+        const t = toast.loading("Preparing Data Registry CSV...");
+        try {
+            const sessionStr = localStorage.getItem("mediverify_session") || sessionStorage.getItem("mediverify_session");
+            const token = sessionStr ? JSON.parse(sessionStr).token : "";
+
+            const response = await fetch(`/api/manufacturer/batch/${batch.id}?download=csv`, {
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+            if (!response.ok) throw new Error("Export failed");
+            const blob = await response.blob();
+            saveAs(blob, `BatchRegistry_${batch.batchNumber}.csv`);
+            toast.dismiss(t);
+            toast.success("Registry CSV downloaded!");
         } catch {
             toast.dismiss(t);
-            toast.error("PDF generation failed");
+            toast.error("CSV Export failed");
         }
     };
 
     const downloadCompliancePdf = async () => {
         const t = toast.loading("Generating Compliance Report…");
         try {
-            const blob = await PrintingService.generateBatchCompliancePdf(batch, batchPills);
+            const pillCount = batch.totalPills || batchPills.length;
+            const blob = await PrintingService.generateBatchCompliancePdf(batch, pillCount);
             saveAs(blob, `ComplianceReport_${batch.batchNumber}.pdf`);
             toast.dismiss(t);
             toast.success("Compliance PDF downloaded!");
@@ -279,6 +378,9 @@ function BatchDetailPanel({
                     </Button>
                     <Button variant="outline" className="w-full rounded-xl h-10 gap-2 text-[13px]" onClick={downloadCompliancePdf}>
                         <ShieldCheck className="h-4 w-4" /> Download Compliance Report PDF
+                    </Button>
+                    <Button variant="outline" className="w-full rounded-xl h-10 gap-2 text-[13px] border-primary/30 hover:bg-primary/5" onClick={downloadFullRegistryCsv}>
+                        <Table className="h-4 w-4 text-primary" /> Download Complete Data Registry (CSV)
                     </Button>
                 </div>
             </div>
@@ -542,7 +644,6 @@ function QRLibraryPage() {
                         />
                         <BatchDetailPanel
                             batch={selectedBatch}
-                            pills={pills}
                             onClose={() => setSelectedBatch(null)}
                         />
                     </>

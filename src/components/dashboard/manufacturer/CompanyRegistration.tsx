@@ -8,6 +8,7 @@ import { Building2, ShieldCheck, FileText, Phone, Globe, MapPin, Loader2, Info }
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { authService } from "@/services/auth";
+import { manufacturerProfileService } from "@/services/manufacturer-profile";
 import { useAuth } from "@/lib/auth-context";
 import { ease } from "@/lib/motion";
 
@@ -24,8 +25,9 @@ type FormData = z.infer<typeof schema>;
 
 export function CompanyRegistrationForm() {
     const navigate = useNavigate();
-    const { updateUser } = useAuth();
+    const { user, updateUser } = useAuth();
     const [step, setStep] = React.useState<1 | 2>(1);
+    const [isReturning, setIsReturning] = React.useState(false);
     const [registeredEmail, setRegisteredEmail] = React.useState("");
     const [otp, setOtp] = React.useState("");
     const [isVerifying, setIsVerifying] = React.useState(false);
@@ -39,7 +41,25 @@ export function CompanyRegistrationForm() {
         formState: { errors, isSubmitting },
     } = useForm<FormData>({
         resolver: zodResolver(schema),
+        defaultValues: {
+            businessEmail: user?.email || ""
+        }
     });
+
+    // Automatically check if returning
+    React.useEffect(() => {
+        const checkReturning = async () => {
+            try {
+                const res = await manufacturerProfileService.getProfile();
+                if (res.success && res.data?.officialEmail) {
+                    setIsReturning(true);
+                }
+            } catch {
+                // Ignore if profile fetch fails
+            }
+        };
+        void checkReturning();
+    }, []);
 
     const sendOtpToBusinessEmail = React.useCallback(async (email: string) => {
         const parsed = z.string().email().safeParse(email.trim());
@@ -54,15 +74,17 @@ export function CompanyRegistrationForm() {
             await authService.sendCompanyOtp(email);
             setLastOtpEmail(email);
             setLastOtpSentAt(now);
+            setRegisteredEmail(email);
             toast.success("Verification code sent", {
                 description: `A 6-digit OTP has been sent to ${email}.`,
             });
+            if (isReturning) setStep(2);
         } catch (error: any) {
             toast.error(error.message || "Failed to send verification code.");
         } finally {
             setIsSendingOtp(false);
         }
-    }, [isSendingOtp, lastOtpEmail, lastOtpSentAt]);
+    }, [isSendingOtp, lastOtpEmail, lastOtpSentAt, isReturning]);
 
     const onDetailsSubmit = async (data: FormData) => {
         try {
@@ -76,6 +98,15 @@ export function CompanyRegistrationForm() {
             setStep(2);
         } catch (error: any) {
             toast.error(error.message || "Failed to submit registration.");
+        }
+    };
+
+    const handleReturningSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        const formData = new FormData(e.currentTarget as HTMLFormElement);
+        const email = formData.get("businessEmail") as string;
+        if (email) {
+            void sendOtpToBusinessEmail(email);
         }
     };
 
@@ -148,7 +179,7 @@ export function CompanyRegistrationForm() {
                             {isSendingOtp ? "Sending..." : "Resend code"}
                         </button>{" "}
                         or{" "}
-                        <button type="button" onClick={() => setStep(1)} className="text-primary font-bold hover:underline">Go back</button>.
+                        <button type="button" onClick={() => { setStep(1); setOtp(""); }} className="text-primary font-bold hover:underline">Go back</button>.
                     </p>
                 </form>
             </motion.div>
@@ -167,66 +198,110 @@ export function CompanyRegistrationForm() {
                     <Building2 className="h-6 w-6" />
                 </div>
                 <div>
-                    <h2 className="text-xl font-bold">Company Registration</h2>
-                    <p className="text-sm text-muted-foreground">Complete your profile to unlock medicine batch registration and QR generation.</p>
+                    <h2 className="text-xl font-bold">
+                        {isReturning ? "Returning Manufacturer" : "Company Registration"}
+                    </h2>
+                    <p className="text-sm text-muted-foreground">
+                        {isReturning
+                            ? "Enter your registered business email to receive a verification code and resume access."
+                            : "Complete your profile to unlock medicine batch registration and QR generation."
+                        }
+                    </p>
                 </div>
             </div>
 
             <div className="grid gap-6 lg:grid-cols-3">
                 <div className="lg:col-span-2">
-                    <form onSubmit={handleSubmit(onDetailsSubmit)} className="space-y-6">
-                        <div className="grid gap-4 sm:grid-cols-2">
+                    {isReturning ? (
+                        <form onSubmit={handleReturningSubmit} className="space-y-6">
                             <div className="space-y-2">
                                 <label className="text-[11px] font-bold text-foreground/70 uppercase tracking-widest flex items-center gap-2">
-                                    <FileText className="h-3 w-3" /> Tax ID / NTN
+                                    <Globe className="h-3 w-3" /> Business Email Address
                                 </label>
                                 <input
-                                    {...register("taxId")}
-                                    className="h-11 w-full rounded-xl border border-border/60 bg-secondary/20 px-4 text-sm transition-all focus:border-primary/40 focus:outline-none focus:ring-4 focus:ring-primary/10"
-                                    placeholder="e.g. 1234567-8"
+                                    name="businessEmail"
+                                    type="email"
+                                    defaultValue={user?.email || ""}
+                                    required
+                                    className="h-12 w-full rounded-xl border border-border/60 bg-secondary/20 px-4 text-sm transition-all focus:border-primary/40 focus:outline-none focus:ring-4 focus:ring-primary/10"
+                                    placeholder="regulatory@company.com"
                                 />
-                                {errors.taxId && <p className="text-[10px] text-destructive font-medium">{errors.taxId.message}</p>}
+                                <p className="text-[10px] text-muted-foreground">
+                                    We will send a 6-digit verification code to this email to confirm your identity.
+                                </p>
+                            </div>
+
+                            <div className="space-y-4">
+                                <Button
+                                    type="submit"
+                                    disabled={isSendingOtp}
+                                    className="h-12 w-full rounded-xl bg-gradient-primary shadow-elegant transition-all hover:scale-[1.01] active:scale-[0.99] font-bold"
+                                >
+                                    {isSendingOtp ? <Loader2 className="h-5 w-5 animate-spin" /> : "Send Verification Code"}
+                                </Button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => setIsReturning(false)}
+                                    className="w-full text-center text-xs text-primary font-semibold hover:underline"
+                                >
+                                    New manufacturer? Fill registration form
+                                </button>
+                            </div>
+                        </form>
+                    ) : (
+                        <form onSubmit={handleSubmit(onDetailsSubmit)} className="space-y-6">
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <div className="space-y-2">
+                                    <label className="text-[11px] font-bold text-foreground/70 uppercase tracking-widest flex items-center gap-2">
+                                        <FileText className="h-3 w-3" /> Tax ID / NTN
+                                    </label>
+                                    <input
+                                        {...register("taxId")}
+                                        className="h-11 w-full rounded-xl border border-border/60 bg-secondary/20 px-4 text-sm transition-all focus:border-primary/40 focus:outline-none focus:ring-4 focus:ring-primary/10"
+                                        placeholder="e.g. 1234567-8"
+                                    />
+                                    {errors.taxId && <p className="text-[10px] text-destructive font-medium">{errors.taxId.message}</p>}
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-[11px] font-bold text-foreground/70 uppercase tracking-widest flex items-center gap-2">
+                                        <ShieldCheck className="h-3 w-3" /> Drug License / Reg No.
+                                    </label>
+                                    <input
+                                        {...register("registrationNumber")}
+                                        className="h-11 w-full rounded-xl border border-border/60 bg-secondary/20 px-4 text-sm transition-all focus:border-primary/40 focus:outline-none focus:ring-4 focus:ring-primary/10"
+                                        placeholder="e.g. LIC-MFG-2026-X"
+                                    />
+                                    {errors.registrationNumber && <p className="text-[10px] text-destructive font-medium">{errors.registrationNumber.message}</p>}
+                                </div>
                             </div>
 
                             <div className="space-y-2">
                                 <label className="text-[11px] font-bold text-foreground/70 uppercase tracking-widest flex items-center gap-2">
-                                    <ShieldCheck className="h-3 w-3" /> Drug License / Reg No.
+                                    <MapPin className="h-3 w-3" /> Registered Business Address
                                 </label>
-                                <input
-                                    {...register("registrationNumber")}
-                                    className="h-11 w-full rounded-xl border border-border/60 bg-secondary/20 px-4 text-sm transition-all focus:border-primary/40 focus:outline-none focus:ring-4 focus:ring-primary/10"
-                                    placeholder="e.g. LIC-MFG-2026-X"
+                                <textarea
+                                    {...register("businessAddress")}
+                                    className="min-h-[100px] w-full rounded-xl border border-border/60 bg-secondary/20 p-4 text-sm transition-all focus:border-primary/40 focus:outline-none focus:ring-4 focus:ring-primary/10 resize-none"
+                                    placeholder="Enter the full legal address of your manufacturing facility..."
                                 />
-                                {errors.registrationNumber && <p className="text-[10px] text-destructive font-medium">{errors.registrationNumber.message}</p>}
-                            </div>
-                        </div>
-
-                        <div className="space-y-2">
-                            <label className="text-[11px] font-bold text-foreground/70 uppercase tracking-widest flex items-center gap-2">
-                                <MapPin className="h-3 w-3" /> Registered Business Address
-                            </label>
-                            <textarea
-                                {...register("businessAddress")}
-                                className="min-h-[100px] w-full rounded-xl border border-border/60 bg-secondary/20 p-4 text-sm transition-all focus:border-primary/40 focus:outline-none focus:ring-4 focus:ring-primary/10 resize-none"
-                                placeholder="Enter the full legal address of your manufacturing facility..."
-                            />
-                            {errors.businessAddress && <p className="text-[10px] text-destructive font-medium">{errors.businessAddress.message}</p>}
-                        </div>
-
-                        <div className="grid gap-4 sm:grid-cols-2">
-                            <div className="space-y-2">
-                                <label className="text-[11px] font-bold text-foreground/70 uppercase tracking-widest flex items-center gap-2">
-                                    <Phone className="h-3 w-3" /> Business Phone
-                                </label>
-                                <input
-                                    {...register("businessPhone")}
-                                    className="h-11 w-full rounded-xl border border-border/60 bg-secondary/20 px-4 text-sm transition-all focus:border-primary/40 focus:outline-none focus:ring-4 focus:ring-primary/10"
-                                    placeholder="+92 300 1234567"
-                                />
-                                {errors.businessPhone && <p className="text-[10px] text-destructive font-medium">{errors.businessPhone.message}</p>}
+                                {errors.businessAddress && <p className="text-[10px] text-destructive font-medium">{errors.businessAddress.message}</p>}
                             </div>
 
                             <div className="grid gap-4 sm:grid-cols-2">
+                                <div className="space-y-2">
+                                    <label className="text-[11px] font-bold text-foreground/70 uppercase tracking-widest flex items-center gap-2">
+                                        <Phone className="h-3 w-3" /> Business Phone
+                                    </label>
+                                    <input
+                                        {...register("businessPhone")}
+                                        className="h-11 w-full rounded-xl border border-border/60 bg-secondary/20 px-4 text-sm transition-all focus:border-primary/40 focus:outline-none focus:ring-4 focus:ring-primary/10"
+                                        placeholder="+92 300 1234567"
+                                    />
+                                    {errors.businessPhone && <p className="text-[10px] text-destructive font-medium">{errors.businessPhone.message}</p>}
+                                </div>
+
                                 <div className="space-y-2">
                                     <label className="text-[11px] font-bold text-foreground/70 uppercase tracking-widest flex items-center gap-2">
                                         <Globe className="h-3 w-3" /> Business Email
@@ -236,53 +311,48 @@ export function CompanyRegistrationForm() {
                                         className="h-11 w-full rounded-xl border border-border/60 bg-secondary/20 px-4 text-sm transition-all focus:border-primary/40 focus:outline-none focus:ring-4 focus:ring-primary/10"
                                         placeholder="regulatory@company.com"
                                     />
-                                    <p className="text-[10px] text-muted-foreground">
-                                        A verification code will be sent to this email after you submit the form.
-                                    </p>
                                     {errors.businessEmail && <p className="text-[10px] text-destructive font-medium">{errors.businessEmail.message}</p>}
                                 </div>
-
-                                <div className="space-y-2">
-                                    <label className="text-[11px] font-bold text-foreground/70 uppercase tracking-widest flex items-center gap-2">
-                                        <Globe className="h-3 w-3" /> Official Website (Optional)
-                                    </label>
-                                    <input
-                                        {...register("website")}
-                                        className="h-11 w-full rounded-xl border border-border/60 bg-secondary/20 px-4 text-sm transition-all focus:border-primary/40 focus:outline-none focus:ring-4 focus:ring-primary/10"
-                                        placeholder="https://www.company.com"
-                                    />
-                                    {errors.website && <p className="text-[10px] text-destructive font-medium">{errors.website.message}</p>}
-                                </div>
                             </div>
-                        </div>
 
-                        <Button
-                            type="submit"
-                            disabled={isSubmitting}
-                            className="h-12 w-full rounded-xl bg-gradient-primary shadow-elegant transition-all hover:scale-[1.01] active:scale-[0.99] font-bold"
-                        >
-                            {isSubmitting ? (
-                                <Loader2 className="h-5 w-5 animate-spin" />
-                            ) : (
-                                "Submit for Verification"
-                            )}
-                        </Button>
-                    </form>
+                            <div className="space-y-4">
+                                <Button
+                                    type="submit"
+                                    disabled={isSubmitting}
+                                    className="h-12 w-full rounded-xl bg-gradient-primary shadow-elegant transition-all hover:scale-[1.01] active:scale-[0.99] font-bold"
+                                >
+                                    {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin" /> : "Submit for Verification"}
+                                </Button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => setIsReturning(true)}
+                                    className="w-full text-center text-xs text-primary font-semibold hover:underline"
+                                >
+                                    Already have a company profile? Verify via Email
+                                </button>
+                            </div>
+                        </form>
+                    )}
                 </div>
 
                 <div className="space-y-4">
                     <div className="rounded-2xl bg-secondary/30 border border-border/40 p-6 space-y-4">
                         <h4 className="font-bold flex items-center gap-2 text-primary">
-                            <Info className="h-4 w-4" /> Why verify?
+                            <Info className="h-4 w-4" /> {isReturning ? "Verification" : "Why verify?"}
                         </h4>
                         <ul className="space-y-3">
-                            {[
+                            {(isReturning ? [
+                                "Confirm ownership of your profile",
+                                "Restore access to your batches",
+                                "Update security credentials",
+                                "Secure your supply chain logs"
+                            ] : [
                                 "Enable Medicine Batch Registration",
                                 "Generate Unique Pill Level QR Codes",
                                 "Access Supply Chain Monitoring",
-                                "Receive Regulatory Compliance Alerts",
                                 "Verify Authenticity to Global Markets"
-                            ].map((item, i) => (
+                            ]).map((item, i) => (
                                 <li key={i} className="text-xs text-muted-foreground flex items-center gap-2">
                                     <div className="h-1 w-1 rounded-full bg-primary" /> {item}
                                 </li>

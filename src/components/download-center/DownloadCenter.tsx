@@ -98,19 +98,34 @@ export function DownloadCenter({ result, boxQrCanvasRef }: Props) {
                     break;
                 }
                 case "pill-sheet": {
-                    // Use a sample pill QR data URL for the sheet
-                    // In a production app, you might generate 100+ unique canvases hidden
-                    const canvas = boxQrCanvasRef.current?.querySelector("canvas"); // placeholder
-                    if (!canvas) throw new Error("Canvas not ready");
-                    const dataUrl = canvas.toDataURL("image/png");
-                    const blob = await PrintingService.generatePillQrSheetPdf(batch, pills, dataUrl);
-                    saveAs(blob, `MediVerify_PillSheet_${batchId}.pdf`);
+                    if (result.totalPillsGenerated > 1000) {
+                        const sessionStr = localStorage.getItem("mediverify_session") || sessionStorage.getItem("mediverify_session");
+                        const token = sessionStr ? JSON.parse(sessionStr).token : "";
+                        const res = await fetch(`/api/manufacturer/batch/${batch.id}?download=pdf`, {
+                            headers: { "Authorization": `Bearer ${token}` }
+                        });
+                        const blob = await res.blob();
+                        saveAs(blob, `MediVerify_PillSheet_${batchId}.pdf`);
+                    } else {
+                        const blob = await PrintingService.generatePillQrSheetPdf(batch, pills);
+                        saveAs(blob, `MediVerify_PillSheet_${batchId}.pdf`);
+                    }
                     break;
                 }
                 case "pill-zip-bulk": {
-                    const canvas = boxQrCanvasRef.current?.querySelector("canvas");
-                    const blob = canvas ? await new Promise<Blob>(r => canvas.toBlob(b => r(b!))) : undefined;
-                    await ExportService.exportPillQrsAsZip(batch, pills, blob);
+                    if (result.totalPillsGenerated > 500) {
+                        const sessionStr = localStorage.getItem("mediverify_session") || sessionStorage.getItem("mediverify_session");
+                        const token = sessionStr ? JSON.parse(sessionStr).token : "";
+                        const res = await fetch(`/api/manufacturer/batch/${batch.id}?download=zip`, {
+                            headers: { "Authorization": `Bearer ${token}` }
+                        });
+                        const blob = await res.blob();
+                        saveAs(blob, `MediVerify_Assets_${batchId}.zip`);
+                    } else {
+                        const canvas = boxQrCanvasRef.current?.querySelector("canvas");
+                        const blob = canvas ? await new Promise<Blob>(r => canvas.toBlob(b => r(b!))) : undefined;
+                        await ExportService.exportPillQrsAsZip(batch, pills, blob);
+                    }
                     break;
                 }
                 case "batch-report-pdf": {

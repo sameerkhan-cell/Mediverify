@@ -1,4 +1,5 @@
 import { jsPDF } from "jspdf";
+import QRCode from "qrcode";
 import type { MedicineBatch, PillRecord } from "@/types/dual-qr";
 
 /**
@@ -31,10 +32,8 @@ export class PrintingService {
     /**
      * Generates a PDF for a sheet of Pill QRs.
      * Layout: Micro QR layout (0.8cm x 0.8cm) on A4.
-     *
-     * Uses a flat cell-index loop so QR codes never straddle a page break.
      */
-    static async generatePillQrSheetPdf(batch: MedicineBatch, pills: PillRecord[], qrDataUrl: string): Promise<Blob> {
+    static async generatePillQrSheetPdf(batch: MedicineBatch, pills: PillRecord[]): Promise<Blob> {
         const doc = new jsPDF({
             unit: "mm",
             format: "a4",
@@ -47,14 +46,13 @@ export class PrintingService {
         const CELL_H = QR_SIZE + 7; // 15 mm per row     (QR + label + vertical gap)
         const COLS = 12;
 
-        const PAGE_H = doc.internal.pageSize.getHeight(); // 297 mm for A4
-        const USABLE_H = PAGE_H - MARGIN_Y - 10;           // 10 mm bottom margin
-        const ROWS_PER_PAGE = Math.floor(USABLE_H / CELL_H);   // whole rows that fit
+        const PAGE_H = doc.internal.pageSize.getHeight();
+        const USABLE_H = PAGE_H - MARGIN_Y - 10;
+        const ROWS_PER_PAGE = Math.floor(USABLE_H / CELL_H);
         const CELLS_PER_PAGE = COLS * ROWS_PER_PAGE;
 
         const totalPages = Math.ceil(pills.length / CELLS_PER_PAGE);
 
-        /** Renders the repeating header at the top of each page */
         const addPageHeader = (pageNum: number) => {
             doc.setFontSize(10);
             doc.setFont("helvetica", "bold");
@@ -69,18 +67,17 @@ export class PrintingService {
                 MARGIN_X, 14
             );
 
-            // thin separator
             doc.setDrawColor(200, 200, 200);
             doc.line(MARGIN_X, 16, doc.internal.pageSize.getWidth() - MARGIN_X, 16);
         };
 
-        // First page header
         addPageHeader(1);
+
+        const qrOpts = { margin: 1, width: 120, errorCorrectionLevel: 'H' as const };
 
         for (let i = 0; i < pills.length; i++) {
             const posOnPage = i % CELLS_PER_PAGE;
 
-            // Every time we roll over to a new page-worth of cells, add a page
             if (posOnPage === 0 && i > 0) {
                 doc.addPage();
                 addPageHeader(Math.floor(i / CELLS_PER_PAGE) + 1);
@@ -92,10 +89,13 @@ export class PrintingService {
             const x = MARGIN_X + col * CELL_W;
             const y = MARGIN_Y + row * CELL_H;
 
-            // QR image — always fully within the page
-            doc.addImage(qrDataUrl, "PNG", x, y, QR_SIZE, QR_SIZE);
+            try {
+                const uniqueQrDataUrl = await QRCode.toDataURL(pills[i].pillQrCode, qrOpts);
+                doc.addImage(uniqueQrDataUrl, "PNG", x, y, QR_SIZE, QR_SIZE);
+            } catch (err) {
+                console.error(`Failed to generate QR for pill ${pills[i].pillNumber}`, err);
+            }
 
-            // Pill number label centred below the QR
             doc.setFontSize(3.5);
             doc.setFont("helvetica", "normal");
             doc.setTextColor(80, 80, 80);
@@ -199,7 +199,7 @@ export class PrintingService {
     /**
      * Alias: Compliance PDF for QR Library — delegates to generateBatchReportPdf.
      */
-    static async generateBatchCompliancePdf(batch: MedicineBatch, pills: PillRecord[]): Promise<Blob> {
-        return PrintingService.generateBatchReportPdf(batch, pills.length);
+    static async generateBatchCompliancePdf(batch: MedicineBatch, pillCount: number): Promise<Blob> {
+        return PrintingService.generateBatchReportPdf(batch, pillCount);
     }
 }

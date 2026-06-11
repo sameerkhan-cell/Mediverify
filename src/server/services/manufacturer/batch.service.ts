@@ -191,30 +191,6 @@ export class BatchService {
                     });
                 }
 
-                // Bulk-insert pill records in chunks (Performance Hardening for 50k+ pills)
-                const pillsData = Array.from({ length: newPillsCount }, (_, i) => {
-                    const pillNum = startPillIndex + i;
-                    return {
-                        batchId: batch.id,
-                        pillNumber: pillNum.toString().padStart(4, "0"),
-                        serialNumber: `SN-${finalBatchNumber}-${pillNum.toString().padStart(4, "0")}`,
-                        qrCode: QRService.formatPillCode(
-                            finalBatchNumber,
-                            pillNum,
-                            companyCode
-                        ),
-                        status: "ACTIVE",
-                        verificationStatus: "UNVERIFIED",
-                        qrScanned: false,
-                    };
-                });
-
-                const CHUNK_SIZE = 5000;
-                for (let i = 0; i < pillsData.length; i += CHUNK_SIZE) {
-                    const chunk = pillsData.slice(i, i + CHUNK_SIZE);
-                    await tx.pill.createMany({ data: chunk, skipDuplicates: true });
-                }
-
                 // ── QR ASSET STORAGE (Hardening) ──────────────────────────
                 // Generate and save Box QR as a PNG file
                 const boxQrBuffer = await QRService.generatePNGBuffer(boxQRCode, 800);
@@ -226,13 +202,40 @@ export class BatchService {
                         batchId: batch.id,
                         type: "BOX_QR",
                         fileUrl: boxQrPath,
-                        metadata: JSON.stringify({ batchNumber: finalBatchNumber, companyCode }),
+                        metadata: JSON.stringify({ width: 800, height: 800 }),
                     },
                 });
 
+                // ─── Bulk-insert pill records in chunks ───
+                // Optimized for high volume (100,000+ pills) to avoid memory pressure and transaction expiry
+                const CHUNK_SIZE = 5000;
+                for (let i = 0; i < newPillsCount; i += CHUNK_SIZE) {
+                    const currentChunkSize = Math.min(CHUNK_SIZE, newPillsCount - i);
+
+                    const chunk = Array.from({ length: currentChunkSize }, (_, j) => {
+                        const globalIndex = i + j;
+                        const pillNum = startPillIndex + globalIndex;
+                        return {
+                            batchId: batch.id,
+                            pillNumber: pillNum.toString().padStart(4, "0"),
+                            serialNumber: `SN-${finalBatchNumber}-${pillNum.toString().padStart(4, "0")}`,
+                            qrCode: QRService.formatPillCode(
+                                finalBatchNumber,
+                                pillNum,
+                                companyCode
+                            ),
+                            status: "ACTIVE",
+                            verificationStatus: "UNVERIFIED",
+                            qrScanned: false,
+                        };
+                    });
+
+                    await tx.pill.createMany({ data: chunk, skipDuplicates: true });
+                }
+
                 return { batch, startPillIndex, newPillsCount };
             },
-            { timeout: 150_000 }
+            { timeout: 900000 }
         );
 
         // 8. Audit logs (non-blocking)
