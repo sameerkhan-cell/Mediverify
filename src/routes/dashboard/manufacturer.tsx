@@ -22,6 +22,8 @@ import { DualQRModal } from "@/components/batch-registration/DualQRModal";
 import { ExtendBatchModal } from "@/components/batch-registration/ExtendBatchModal";
 import { RecallHubWidget } from "@/components/regulatory/RecallHubWidget";
 import { CompanyRegistrationForm } from "@/components/dashboard/manufacturer/CompanyRegistration";
+import { saveAs } from "file-saver";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/dashboard/manufacturer")({
   head: () => ({
@@ -61,7 +63,7 @@ import { AIFraudMonitor } from "@/components/dashboard/ai-fraud-monitor";
 import { useEffect } from "react";
 
 function Page() {
-  const { user, isAuthenticated, signOut, isLoading } = useAuth();
+  const { user, isAuthenticated, signOut, isLoading, session } = useAuth();
   const { batches, pills, stats, setBatches } = useQRStore();
   const [qrOpen, setQrOpen] = useState(false);
   const [dualOpen, setDualOpen] = useState(false);
@@ -102,7 +104,7 @@ function Page() {
             batchNumber: b.batchNumber,
             medicineName: b.medicine.name,
             totalPills: b.totalPillsGenerated,
-            totalPillsPerBox: b.pillsPerBox,
+            pillsPerBox: b.pillsPerBox,
             manufacturingDate: b.manufacturingDate,
             expiryDate: b.expiryDate,
             status: b.status, // Use decorated status from backend
@@ -126,6 +128,30 @@ function Page() {
       .catch(err => console.error("Failed to load stats:", err));
 
   }, [isAuthenticated, user?.role, setBatches, signOut]);
+
+  const handleExportCSV = async () => {
+    const t = toast.loading("Preparing CSV export...");
+    try {
+      const token = session?.token || "";
+      if (!token) throw new Error("Authentication required. Please re-login.");
+
+      const res = await fetch("/api/manufacturer/batches?download=csv", {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || `Export failed with status ${res.status}`);
+      }
+
+      const blob = await res.blob();
+      saveAs(blob, `MediVerify_Inventory_Report_${new Date().toISOString().split('T')[0]}.csv`);
+      toast.success("CSV exported successfully!", { id: t });
+    } catch (err: any) {
+      console.error("Export failed:", err);
+      toast.error(err.message || "Failed to export CSV. Please try again.", { id: t });
+    }
+  };
 
   if (isLoading) {
     return (
@@ -200,7 +226,11 @@ function Page() {
             <Plus className="mr-2 h-4 w-4" /> Generate More Pills
           </Button>
         </div>
-        <Button variant="ghost" className="rounded-full text-[13px] font-medium text-muted-foreground self-end sm:self-auto">
+        <Button
+          variant="ghost"
+          onClick={handleExportCSV}
+          className="rounded-full text-[13px] font-medium text-muted-foreground self-end sm:self-auto hover:bg-primary/5 hover:text-primary"
+        >
           <Download className="mr-2 h-4 w-4" /> Export CSV
         </Button>
       </motion.div>

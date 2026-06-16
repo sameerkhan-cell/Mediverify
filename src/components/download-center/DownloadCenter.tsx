@@ -20,7 +20,7 @@ interface Props {
     boxQrCanvasRef: React.RefObject<HTMLDivElement | null>;
 }
 
-type DlKey = "box-png" | "box-svg" | "box-pdf" | "pill-sheet" | "pill-zip-bulk" | "batch-report-pdf";
+type DlKey = "carton-pdf" | "carton-zip" | "box-pdf" | "box-zip" | "pill-sheet" | "pill-zip-bulk" | "batch-report-pdf";
 type DlStatus = "idle" | "loading" | "done";
 
 interface DownloadItem {
@@ -32,11 +32,19 @@ interface DownloadItem {
     badgeText: string;
 }
 
-const DOWNLOADS: DownloadItem[] = [
+const DOWNLOADS = (result: DualQRResult): DownloadItem[] => [
+    {
+        key: "carton-pdf",
+        label: "Carton Label — A4 PDF",
+        description: `Official 6cm × 6cm carton label, ${result.cartons.length} cartons`,
+        icon: Printer,
+        accentClass: "text-primary bg-primary/10",
+        badgeText: "Print",
+    },
     {
         key: "box-pdf",
         label: "Box Label — A4 PDF",
-        description: "Official 3cm × 3cm print layout",
+        description: `Official 3cm × 3cm print layout, ${result.boxes.length} boxes`,
         icon: Printer,
         accentClass: "text-primary bg-primary/10",
         badgeText: "Print",
@@ -48,6 +56,22 @@ const DOWNLOADS: DownloadItem[] = [
         icon: Layers,
         accentClass: "text-success bg-success/10",
         badgeText: "Print",
+    },
+    {
+        key: "carton-zip",
+        label: "Carton QR — ZIP",
+        description: `All ${result.cartons.length} carton QR codes as PNG`,
+        icon: Archive,
+        accentClass: "text-primary bg-primary/10",
+        badgeText: "Bulk",
+    },
+    {
+        key: "box-zip",
+        label: "Box QR — ZIP",
+        description: `All ${result.boxes.length} box QR codes as PNG`,
+        icon: Archive,
+        accentClass: "text-primary bg-primary/10",
+        badgeText: "Bulk",
     },
     {
         key: "pill-zip-bulk",
@@ -64,14 +88,6 @@ const DOWNLOADS: DownloadItem[] = [
         icon: FileDown,
         accentClass: "text-primary bg-primary/10",
         badgeText: "Legal",
-    },
-    {
-        key: "box-png",
-        label: "Box QR — PNG",
-        description: "High-resolution transparent asset",
-        icon: ImageIcon,
-        accentClass: "text-muted-foreground bg-secondary/40",
-        badgeText: "Asset",
     },
 ];
 
@@ -133,14 +149,24 @@ export function DownloadCenter({ result, boxQrCanvasRef }: Props) {
                     saveAs(blob, `MediVerify_BatchReport_${batchId}.pdf`);
                     break;
                 }
-                case "box-png": {
+                case "carton-pdf": {
+                    // Carton label PDF tiling (using Box PDF fallback as placeholder)
                     const canvas = boxQrCanvasRef.current?.querySelector("canvas");
-                    if (!canvas) {
-                        console.error("Box QR canvas not found in DOM");
-                        break;
-                    }
-                    const dataUrl = exportQRCanvasToPng(canvas, batch.boxQrCode, `MediVerify · ${batch.medicineName}`);
-                    triggerDownload(dataUrl, `MediVerify-BoxQR-${batchId}.png`);
+                    if (!canvas) throw new Error("Canvas not ready");
+                    const dataUrl = canvas.toDataURL("image/png");
+                    const blob = await PrintingService.generateBoxQrPdf(batch, dataUrl);
+                    saveAs(blob, `MediVerify_CartonLabel_${batchId}.pdf`);
+                    break;
+                }
+                case "carton-zip":
+                case "box-zip": {
+                    // Bulk ZIP export using ExportService
+                    const items = key === "carton-zip" ? result.cartons : result.boxes;
+                    await ExportService.exportPillQrsAsZip(batch, items.map(i => ({
+                        id: i.id,
+                        pillQrCode: i.qrCode,
+                        pillNumber: (i as any).boxNumber || (i as any).cartonNumber || "Asset"
+                    })) as any);
                     break;
                 }
             }
@@ -169,14 +195,13 @@ export function DownloadCenter({ result, boxQrCanvasRef }: Props) {
                 <div className="flex items-center gap-2 rounded-full bg-secondary/50 border border-border/40 px-3 py-1.5">
                     <Package className="h-3 w-3 text-primary" />
                     <span className="text-[11px] font-semibold tabular-nums">
-                        1 Box + <span className="text-success">{result.totalPillsGenerated.toLocaleString()}</span> Pills
+                        {result.cartons.length} Cartons + {result.boxes.length} Boxes + <span className="text-success">{result.totalPillsGenerated.toLocaleString()}</span> Pills
                     </span>
                 </div>
             </div>
 
-            {/* Download grid */}
             <div className="grid grid-cols-1 gap-2.5">
-                {DOWNLOADS.map((item) => {
+                {DOWNLOADS(result).map((item) => {
                     const status = statuses[item.key] || "idle";
                     const isLoading = status === "loading";
                     const isDone = status === "done";

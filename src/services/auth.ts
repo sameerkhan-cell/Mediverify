@@ -20,10 +20,8 @@ export function getStoredSession(): AuthSession | null {
       sessionStorage.getItem(SESSION_KEY);
     if (!raw) return null;
     const session: AuthSession = JSON.parse(raw);
-    if (Date.now() > session.expiresAt) {
-      clearSession();
-      return null;
-    }
+    // Let the backend handle true token expiration (JWT)
+    // Local expiration check can be too strict or out of sync
     return session;
   } catch {
     return null;
@@ -73,12 +71,12 @@ async function handleResponse<T>(response: Response): Promise<AuthResponse<T>> {
 export type LoginResult =
   | (AuthResponse<AuthSession> & { pendingMfa?: false })
   | {
-      success: false;
-      pendingMfa: true;
-      message: string;
-      email: string;
-      error?: AuthResponse["error"];
-    };
+    success: false;
+    pendingMfa: true;
+    message: string;
+    email: string;
+    error?: AuthResponse["error"];
+  };
 
 export const authService = {
   async login(creds: LoginCredentials): Promise<LoginResult> {

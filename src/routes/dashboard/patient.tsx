@@ -1,11 +1,13 @@
 import { createFileRoute, Navigate, Link } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { BrowserMultiFormatReader } from "@zxing/library";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ScanLine, QrCode, Barcode, CheckCircle2, AlertTriangle, XCircle, Loader2,
   ShieldAlert, MapPin, Calendar, Building2, Share2, Hash, Cpu, Shield, Zap,
   Pill, Bell, Clock, Filter, FileText, Activity, Plus, Star, ArrowRight,
-  MessageSquare, Map, ShieldCheck, Layers, WifiOff
+  MessageSquare, Map, ShieldCheck, Layers, WifiOff, Package, Box,
+  ChevronDown, Store, Phone, User, CheckCircle2 as CheckCircle
 } from "lucide-react";
 import { SiteLayout } from "@/components/site/SiteLayout";
 import { Button } from "@/components/ui/button";
@@ -29,8 +31,101 @@ export const Route = createFileRoute("/dashboard/patient")({
   component: VerifyPage,
 });
 
-import { VerificationService, type VerificationResult as IVerificationResult } from "@/services/verification/verification-service";
+import { VerificationService, type VerificationResult } from "@/services/verification/verification-service";
 import { useVerificationStore } from "@/store/verification-store";
+
+interface IVerificationResult extends VerificationResult {
+  supplyChain?: { boxNumber: string; pharmacyName: string | null; verifiedBy: string };
+  pillInfo?: { pillNumber: string; boxNumber: string | null; sequencePosition: string };
+  cartonInfo?: { cartonNumber: string; boxesCount: number; boxNumbers: string[] };
+  manufacturer?: {
+    licenseNumber?: string;
+    address?: string;
+    businessPhone?: string;
+    businessEmail?: string;
+    companyName?: string;
+  };
+}
+
+function LiveScanner({
+  mode,
+  onResult,
+  onClose
+}: {
+  mode: "qr" | "barcode";
+  onResult: (code: string) => void;
+  onClose: () => void;
+}) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const reader = new BrowserMultiFormatReader();
+
+    if (videoRef.current) {
+      reader.decodeFromVideoDevice(null, videoRef.current, (result, err) => {
+        if (result) {
+          const text = result.getText();
+          reader.reset();
+          onResult(text);
+        }
+      }).catch((err) => {
+        console.error("Scanner Error:", err);
+        setError("Camera access denied. Please allow camera permissions.");
+      });
+    }
+
+    return () => {
+      reader.reset();
+    };
+  }, [onResult]);
+
+  return (
+    <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/90 backdrop-blur-md">
+      <div className="relative w-full max-w-sm mx-4 aspect-square">
+        <video
+          ref={videoRef}
+          className="w-full h-full object-cover rounded-3xl border-2 border-primary/20 shadow-[0_0_50px_rgba(var(--primary),0.2)]"
+        />
+        <div className="absolute inset-0 m-8 border-2 border-white/40 rounded-2xl pointer-events-none">
+          <div className="absolute inset-x-0 h-0.5 bg-primary/60 shadow-[0_0_15px_rgba(var(--primary),0.8)] top-1/2 -translate-y-1/2 animate-scan-line" />
+        </div>
+
+        {/* Decorative corners */}
+        <div className="absolute top-0 left-0 w-10 h-10 border-t-2 border-l-2 border-primary rounded-tl-3xl" />
+        <div className="absolute top-0 right-0 w-10 h-10 border-t-2 border-r-2 border-primary rounded-tr-3xl" />
+        <div className="absolute bottom-0 left-0 w-10 h-10 border-b-2 border-l-2 border-primary rounded-bl-3xl" />
+        <div className="absolute bottom-0 right-0 w-10 h-10 border-b-2 border-r-2 border-primary rounded-br-3xl" />
+      </div>
+
+      <div className="mt-8 px-6 text-center">
+        <p className="text-white font-bold text-lg">
+          Scanning {mode === "qr" ? "QR Code" : "Barcode"}
+        </p>
+        <p className="text-white/60 text-sm mt-1 max-w-[280px]">
+          {mode === "qr"
+            ? "Center the QR code on the medicine box or strip within the frame."
+            : "Place the barcode on the package clearly inside the frame."}
+        </p>
+        {error && (
+          <div className="mt-4 p-3 bg-destructive/20 border border-destructive/40 rounded-xl">
+            <p className="text-destructive-foreground text-xs font-semibold">{error}</p>
+          </div>
+        )}
+      </div>
+
+      <div className="absolute bottom-12 flex gap-4">
+        <Button
+          onClick={onClose}
+          variant="secondary"
+          className="h-12 px-8 rounded-2xl bg-white/10 hover:bg-white/20 text-white border-none backdrop-blur-xl"
+        >
+          Cancel
+        </Button>
+      </div>
+    </div>
+  );
+}
 
 function VerifyPage() {
   const { user, isAuthenticated, signOut, isLoading } = useAuth();
@@ -38,6 +133,7 @@ function VerifyPage() {
 
   const [batch, setBatch] = useState("");
   const [result, setResult] = useState<IVerificationResult | null>(null);
+  const [activeScanner, setActiveScanner] = useState<"qr" | "barcode" | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
   const [showReportModal, setShowReportModal] = useState(false);
@@ -170,10 +266,40 @@ function VerifyPage() {
                       </TabsContent>
 
                       <TabsContent value="qr" className="px-2 pb-2">
-                        <ScannerMock icon={QrCode} label="Align the QR code within the frame" onSimulate={() => verify("BOX-LHR-2025-A1")} />
+                        <div className="grid place-items-center rounded-2xl bg-secondary/20 p-10 border border-border/40">
+                          <div className="h-20 w-20 rounded-3xl bg-primary/10 flex items-center justify-center mb-4">
+                            <QrCode className="h-10 w-10 text-primary" />
+                          </div>
+                          <h3 className="text-[15px] font-bold">QR Code Scanner</h3>
+                          <p className="text-[12px] text-muted-foreground mt-1 mb-6 text-center max-w-[240px]">
+                            Scan the unique QR code printed on the medicine box or individual pill strip.
+                          </p>
+                          <Button
+                            onClick={() => setActiveScanner("qr")}
+                            className="h-12 w-full rounded-xl bg-primary/10 hover:bg-primary/20 text-primary border-primary/20"
+                            variant="outline"
+                          >
+                            <ScanLine className="mr-2 h-4 w-4" /> Open Camera Scanner
+                          </Button>
+                        </div>
                       </TabsContent>
                       <TabsContent value="barcode" className="px-2 pb-2">
-                        <ScannerMock icon={Barcode} label="Hold the barcode steady" onSimulate={() => verify("PILL-LHR-2025-007-GSK")} />
+                        <div className="grid place-items-center rounded-2xl bg-secondary/20 p-10 border border-border/40">
+                          <div className="h-20 w-20 rounded-3xl bg-primary/10 flex items-center justify-center mb-4">
+                            <Barcode className="h-10 w-10 text-primary" />
+                          </div>
+                          <h3 className="text-[15px] font-bold">Barcode Scanner</h3>
+                          <p className="text-[12px] text-muted-foreground mt-1 mb-6 text-center max-w-[240px]">
+                            Verify using the standard product barcode found on the medicine packaging.
+                          </p>
+                          <Button
+                            onClick={() => setActiveScanner("barcode")}
+                            className="h-12 w-full rounded-xl bg-primary/10 hover:bg-primary/20 text-primary border-primary/20"
+                            variant="outline"
+                          >
+                            <ScanLine className="mr-2 h-4 w-4" /> Open Camera Scanner
+                          </Button>
+                        </div>
                       </TabsContent>
                     </Tabs>
                   </div>
@@ -311,6 +437,18 @@ function VerifyPage() {
         onClose={() => setShowReportModal(false)}
         prefillBatch={result?.status !== 'genuine' ? result?.batchDetails?.batchNumber : undefined}
       />
+
+      {activeScanner && (
+        <LiveScanner
+          mode={activeScanner}
+          onResult={(code) => {
+            setActiveScanner(null);
+            setBatch(code);
+            verify(code);
+          }}
+          onClose={() => setActiveScanner(null)}
+        />
+      )}
     </SiteLayout>
   );
 }
@@ -699,7 +837,29 @@ const STATUS_META: Record<string, { label: string; tone: string; glow: string; i
   invalid: { label: "Counterfeit", tone: "destructive", glow: "glow-fake", icon: XCircle, badge: "⚠ DANGER" },
 };
 
+function DetailRow({ icon, label, value, valueColor = "text-foreground" }: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  valueColor?: string;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <div className="flex items-center gap-1.5 text-muted-foreground">
+        {icon}
+        <span className="text-[11px]">{label}</span>
+      </div>
+      <span className={`text-[11px] font-medium text-right ${valueColor}`}>{value}</span>
+    </div>
+  );
+}
+
 function ResultCard({ status: result, batch }: { status: IVerificationResult; batch: string }) {
+  const [expandedSection, setExpandedSection] = useState<"manufacturer" | "pharmacy" | null>(null);
+  const toggleSection = (section: "manufacturer" | "pharmacy") => {
+    setExpandedSection(prev => prev === section ? null : section);
+  };
+
   const m = STATUS_META[result.status] || STATUS_META.invalid;
   const toneMap = {
     success: "bg-success/8 text-success border-success/20",
@@ -741,12 +901,112 @@ function ResultCard({ status: result, batch }: { status: IVerificationResult; ba
             </>
           )}
           {result.batchDetails && (
-            <>
-              <Field icon={Hash} label="Parent Batch" value={result.batchDetails.batchNumber} mono />
-              <Field icon={Pill} label="Medicine" value={result.batchDetails.name} />
-              <Field icon={Building2} label="Manufacturer" value={result.batchDetails.manufacturer} />
-              <Field icon={Calendar} label="Expiry Date" value={result.batchDetails.expiry} />
-            </>
+            <div className="space-y-2">
+
+              {/* Medicine Info — always visible */}
+              <div className="rounded-xl bg-secondary/20 border border-border/40 p-3.5">
+                <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-2">Medicine</p>
+                <p className="font-semibold text-sm">{result.batchDetails.name}</p>
+                <div className="flex gap-4 mt-1.5">
+                  <span className="text-[11px] text-muted-foreground">Batch: <span className="text-foreground font-mono">{result.batchDetails.batchNumber}</span></span>
+                  <span className="text-[11px] text-muted-foreground">Expiry: <span className="text-foreground">{result.batchDetails.expiry}</span></span>
+                </div>
+              </div>
+
+              {/* Manufacturer Dropdown */}
+              <div className="rounded-xl border border-border/40 overflow-hidden">
+                <button
+                  onClick={() => toggleSection("manufacturer")}
+                  className="w-full flex items-center justify-between p-3.5 bg-secondary/20 hover:bg-secondary/40 transition-colors"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-7 h-7 rounded-lg bg-blue-500/15 flex items-center justify-center">
+                      <Building2 className="h-3.5 w-3.5 text-blue-500" />
+                    </div>
+                    <div className="text-left">
+                      <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Manufacturer</p>
+                      <p className="text-sm font-semibold">{result.batchDetails.manufacturer}</p>
+                    </div>
+                  </div>
+                  <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${expandedSection === "manufacturer" ? "rotate-180" : ""}`} />
+                </button>
+
+                <AnimatePresence>
+                  {expandedSection === "manufacturer" && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="p-3.5 pt-2 space-y-2 border-t border-border/30 bg-secondary/10">
+                        <DetailRow icon={<Shield className="h-3 w-3" />} label="DRAP License" value={result.manufacturer?.licenseNumber ?? "Verified by DRAP"} />
+                        <DetailRow icon={<MapPin className="h-3 w-3" />} label="Location" value={result.manufacturer?.address ?? "Pakistan"} />
+                        <DetailRow icon={<Phone className="h-3 w-3" />} label="Contact" value={result.manufacturer?.businessPhone ?? result.manufacturer?.businessEmail ?? "Available on DRAP portal"} />
+                        <DetailRow icon={<CheckCircle className="h-3 w-3 text-green-500" />} label="Verification" value="DRAP Registered & Verified" valueColor="text-green-500" />
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* Pharmacy Dropdown — only if supplyChain exists */}
+              {result.supplyChain?.pharmacyName && (
+                <div className="rounded-xl border border-border/40 overflow-hidden">
+                  <button
+                    onClick={() => toggleSection("pharmacy")}
+                    className="w-full flex items-center justify-between p-3.5 bg-secondary/20 hover:bg-secondary/40 transition-colors"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-7 h-7 rounded-lg bg-green-500/15 flex items-center justify-center">
+                        <Store className="h-3.5 w-3.5 text-green-500" />
+                      </div>
+                      <div className="text-left">
+                        <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Supplied By</p>
+                        <p className="text-sm font-semibold">{result.supplyChain.pharmacyName}</p>
+                      </div>
+                    </div>
+                    <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${expandedSection === "pharmacy" ? "rotate-180" : ""}`} />
+                  </button>
+
+                  <AnimatePresence>
+                    {expandedSection === "pharmacy" && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="p-3.5 pt-2 space-y-2 border-t border-border/30 bg-secondary/10">
+                          <DetailRow icon={<MapPin className="h-3 w-3" />} label="Pharmacy" value={result.supplyChain.pharmacyName} />
+                          <DetailRow icon={<Box className="h-3 w-3" />} label="Box Number" value={result.supplyChain.boxNumber ?? "N/A"} />
+                          <DetailRow icon={<User className="h-3 w-3" />} label="Verified By" value={result.supplyChain.verifiedBy} />
+                          <DetailRow icon={<CheckCircle className="h-3 w-3 text-green-500" />} label="Status" value="Pharmacy Verified" valueColor="text-green-500" />
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              )}
+
+              {/* Pill/Box/Carton info — compact, always visible if exists */}
+              {(result.pillInfo || result.cartonInfo) && (
+                <div className="rounded-xl bg-secondary/20 border border-border/40 p-3.5 space-y-1.5">
+                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-2">Supply Chain Trail</p>
+                  {result.cartonInfo && (
+                    <DetailRow icon={<Package className="h-3 w-3" />} label="Carton" value={result.cartonInfo.cartonNumber + " (" + result.cartonInfo.boxesCount + " boxes)"} />
+                  )}
+                  {result.pillInfo?.boxNumber && (
+                    <DetailRow icon={<Box className="h-3 w-3" />} label="Box" value={result.pillInfo.boxNumber} />
+                  )}
+                  {result.pillInfo && (
+                    <DetailRow icon={<Pill className="h-3 w-3" />} label="Pill" value={result.pillInfo.sequencePosition} />
+                  )}
+                </div>
+              )}
+            </div>
           )}
           {result.fraudDetails && (
             <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 space-y-2 mt-4">

@@ -2,6 +2,7 @@ import { createAPIFileRoute } from "@/lib/api-route-helper";
 import { BatchService } from "@/server/services/manufacturer/batch.service";
 import { authorizeRequest } from "@/server/middleware/auth.middleware";
 import { ApiResponse } from "@/server/utils/api-response";
+import { prisma } from "@/server/db/client";
 
 /**
  * POST /api/manufacturer/register-batch
@@ -41,7 +42,19 @@ export const Route = createAPIFileRoute("/api/manufacturer/register-batch")({
                 { ipAddress, userAgent }
             );
 
-            return Response.json(ApiResponse.success(result, "Batch registered and QRs synchronized."));
+            // Enrich response with cartons and boxes for the preview UI
+            const [cartons, boxes] = await Promise.all([
+                prisma.carton.findMany({
+                    where: { batchId: result.batch.id },
+                    select: { id: true, cartonNumber: true, qrCode: true, boxesCount: true }
+                }),
+                prisma.box.findMany({
+                    where: { batchId: result.batch.id },
+                    select: { id: true, boxNumber: true, qrCode: true }
+                })
+            ]);
+
+            return Response.json(ApiResponse.success({ ...result, cartons, boxes }, "Batch registered and QRs synchronized."));
         } catch (error: any) {
             const status = error.statusCode || 400;
             return Response.json(ApiResponse.error(error.message, status), { status });

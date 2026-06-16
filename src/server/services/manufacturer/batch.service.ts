@@ -19,6 +19,7 @@ export interface BatchRegistrationData {
     expiryDate: string;
     quantityBoxes: number;
     pillsPerBox: number;
+    boxesPerCarton: number;
     dosageStrength?: string;
     productType?: string;
 
@@ -67,6 +68,7 @@ export class BatchService {
             expiryDate,
             quantityBoxes,
             pillsPerBox,
+            boxesPerCarton,
             dosageStrength,
             productType,
         } = data;
@@ -142,7 +144,8 @@ export class BatchService {
 
         // 6. QR code identities
         const companyCode = manufacturer.companyCode || (manufacturer.companyName.substring(0, 3)).toUpperCase();
-        const boxQRCode = QRService.formatBoxCode(finalBatchNumber, companyCode);
+        // For backward compatibility in logs and the batch record, we use the first box index as the "primary" box QR if needed
+        const boxQRCode = QRService.formatBoxCode(finalBatchNumber, 1, companyCode);
         const newPillsCount = quantityBoxes * pillsPerBox;
         const startPillIndex = isExtension
             ? existingBatch!.totalPillsGenerated + 1
@@ -166,6 +169,7 @@ export class BatchService {
                         data: {
                             quantityBoxes: { increment: quantityBoxes },
                             totalPillsGenerated: { increment: newPillsCount },
+                            boxesPerCarton: boxesPerCarton ?? existingBatch.boxesPerCarton,
                         },
                         include: { medicine: { include: { manufacturer: true } } },
                     });
@@ -178,6 +182,7 @@ export class BatchService {
                             expiryDate: expiry,
                             quantityBoxes,
                             pillsPerBox,
+                            boxesPerCarton: boxesPerCarton ?? 10,
                             totalPillsGenerated: newPillsCount,
                             boxQRCode,
                             dosageStrength: dosageStrength ?? dosage ?? null,
@@ -192,11 +197,11 @@ export class BatchService {
                 }
 
                 // ── QR ASSET STORAGE (Hardening) ──────────────────────────
-                // Generate and save Box QR as a PNG file
+                // Generate and save the first Box QR as a representative PNG file for the batch
                 const boxQrBuffer = await QRService.generatePNGBuffer(boxQRCode, 800);
                 const boxQrPath = await QRService.saveAsset(batch.id, "box.png", boxQrBuffer);
 
-                // Persist Box QRAsset record with filesystem path
+                // Persist representative Box QRAsset record
                 await tx.qRAsset.create({
                     data: {
                         batchId: batch.id,
@@ -206,34 +211,70 @@ export class BatchService {
                     },
                 });
 
-                // ─── Bulk-insert pill records in chunks ───
-                // Optimized for high volume (100,000+ pills) to avoid memory pressure and transaction expiry
-                const CHUNK_SIZE = 5000;
-                for (let i = 0; i < newPillsCount; i += CHUNK_SIZE) {
-                    const currentChunkSize = Math.min(CHUNK_SIZE, newPillsCount - i);
+                // ─── 3-Level Supply Chain Generation ───
+                const totalBoxes = quantityBoxes;
+                const finalBoxesPerCarton = boxesPerCarton ?? 10;
+                const totalCartons = Math.ceil(totalBoxes / finalBoxesPerCarton);
 
-                    const chunk = Array.from({ length: currentChunkSize }, (_, j) => {
-                        const globalIndex = i + j;
-                        const pillNum = startPillIndex + globalIndex;
-                        return {
+                const allCartons = [];
+                const allBoxes = [];
+
+                for (let c = 1; c <= totalCartons; c++) {
+                    const boxesInThisCarton = Math.min(finalBoxesPerCarton, totalBoxes - (c - 1) * finalBoxesPerCarton);
+                    const cartonCode = QRService.formatCartonCode(finalBatchNumber, c, companyCode);
+                    const carton = await tx.carton.create({
+                        data: {
                             batchId: batch.id,
-                            pillNumber: pillNum.toString().padStart(4, "0"),
-                            serialNumber: `SN-${finalBatchNumber}-${pillNum.toString().padStart(4, "0")}`,
-                            qrCode: QRService.formatPillCode(
-                                finalBatchNumber,
-                                pillNum,
-                                companyCode
-                            ),
-                            status: "ACTIVE",
-                            verificationStatus: "UNVERIFIED",
-                            qrScanned: false,
-                        };
+                            cartonNumber: cartonCode,
+                            qrCode: cartonCode,
+                            boxesCount: boxesInThisCarton,
+                            status: "ACTIVE"
+                        }
                     });
+                    allCartons.push(carton);
 
-                    await tx.pill.createMany({ data: chunk, skipDuplicates: true });
+                    for (let b = 1; b <= boxesInThisCarton; b++) {
+                        const globalBoxIndex = (c - 1) * finalBoxesPerCarton + b;
+                        const boxCode = QRService.formatBoxCode(finalBatchNumber, globalBoxIndex, companyCode);
+                        const box = await tx.box.create({
+                            data: {
+                                batchId: batch.id,
+                                cartonId: carton.id,
+                                boxNumber: boxCode,
+                                qrCode: boxCode,
+                                pillsCount: pillsPerBox,
+                                status: "ACTIVE"
+                            }
+                        });
+                        allBoxes.push(box);
+
+                        const pillsData = [];
+                        for (let p = 1; p <= pillsPerBox; p++) {
+                            const currentBoxPillIndex = (globalBoxIndex - 1) * pillsPerBox + p;
+                            const globalPillNum = startPillIndex + currentBoxPillIndex - 1;
+                            const pillCode = QRService.formatPillCode(finalBatchNumber, globalPillNum, companyCode);
+
+                            pillsData.push({
+                                batchId: batch.id,
+                                boxId: box.id,
+                                pillNumber: globalPillNum.toString().padStart(4, "0"),
+                                serialNumber: `SN-${finalBatchNumber}-${globalPillNum.toString().padStart(4, "0")}`,
+                                qrCode: pillCode,
+                                status: "ACTIVE",
+                                verificationStatus: "UNVERIFIED",
+                                qrScanned: false
+                            });
+                        }
+                        await tx.pill.createMany({ data: pillsData, skipDuplicates: true });
+                    }
                 }
 
-                return { batch, startPillIndex, newPillsCount };
+                await tx.batch.update({
+                    where: { id: batch.id },
+                    data: { totalPillsGenerated: totalBoxes * pillsPerBox }
+                });
+
+                return { batch, startPillIndex, newPillsCount, cartons: allCartons, boxes: allBoxes };
             },
             { timeout: 900000 }
         );
@@ -263,7 +304,13 @@ export class BatchService {
             ...requestMeta,
         });
 
-        return result;
+        return {
+            batch: result.batch,
+            startPillIndex: result.startPillIndex,
+            newPillsCount: result.newPillsCount,
+            cartons: result.cartons,
+            boxes: result.boxes
+        };
     }
 
     // ── Queries ──────────────────────────────────────────────────────────────
@@ -293,8 +340,16 @@ export class BatchService {
             include: {
                 medicine: { include: { manufacturer: true } },
                 pills: options.allPills ? true : { take: 50 },
+                boxes: options.allPills ? true : { take: 1 },
+                cartons: options.allPills ? true : { take: 1 },
                 qrAssets: { orderBy: { createdAt: "desc" } },
-                _count: { select: { pills: true } },
+                _count: {
+                    select: {
+                        pills: true,
+                        boxes: true,
+                        cartons: true
+                    }
+                },
             },
         });
 

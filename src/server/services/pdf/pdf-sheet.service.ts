@@ -58,15 +58,18 @@ export class PDFSheetService {
         let currentX = margin;
         let currentY = 30;
 
-        // ── PERFORMANCE OPTIMIZATION: Parallel QR Generation ──
-        // Increased concurrency to 50 for faster throughput (supported by 4GB heap)
-        const CONCURRENCY = 50;
+        // ── PERFORMANCE OPTIMIZATION: High-Throughput Parallel Generation ──
+        // Increased concurrency to 150 to maximize CPU/Memory efficiency for large batches
+        const CONCURRENCY = 150;
         for (let i = 0; i < pills.length; i += CONCURRENCY) {
             const chunk = pills.slice(i, i + CONCURRENCY);
 
             const qrTasks = chunk.map(pill =>
-                QRService.generateDataURL(pill.qrCode, { width: 100, margin: 0 })
-                    .then(dataUrl => ({ pill, dataUrl }))
+                QRService.generateDataURL(pill.qrCode, {
+                    width: 80, // Reduced resolution for faster encoding without losing scanability
+                    margin: 0,
+                    errorCorrectionLevel: 'M' // Standard reliability for faster generation
+                }).then(dataUrl => ({ pill, dataUrl }))
             );
 
             const results = await Promise.all(qrTasks);

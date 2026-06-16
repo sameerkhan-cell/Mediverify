@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { useQRStore } from "@/store/qr-store";
 import type { MedicineBatch, PillRecord } from "@/types/dual-qr";
 import { QRCodeCanvas } from "qrcode.react";
+import QRCode from "qrcode";
 import { PrintingService } from "@/services/printing/printing-service";
 import { saveAs } from "file-saver";
 import { toast } from "sonner";
@@ -55,9 +56,11 @@ function BatchDetailPanel({
     batch: MedicineBatch;
     onClose: () => void;
 }) {
+    const { session } = useAuth();
     const [batch, setBatch] = useState<MedicineBatch>(initialBatch);
     const [batchPills, setBatchPills] = useState<PillRecord[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isDownloading, setIsDownloading] = useState(false);
 
     const boxQrRef = useRef<HTMLDivElement>(null);
     const pillQrRef = useRef<HTMLDivElement>(null);
@@ -68,12 +71,17 @@ function BatchDetailPanel({
         const fetchFullDetails = async () => {
             setIsLoading(true);
             try {
-                const sessionStr = localStorage.getItem("mediverify_session") || sessionStorage.getItem("mediverify_session");
-                const token = sessionStr ? JSON.parse(sessionStr).token : "";
+                const token = session?.token || "";
 
                 const res = await fetch(`/api/manufacturer/batch/${initialBatch.id}`, {
                     headers: { "Authorization": `Bearer ${token}` }
                 });
+
+                if (res.status === 401) {
+                    toast.error("Your session has expired. Please log in again.");
+                    return;
+                }
+
                 const data = await res.json();
 
                 if (data.success) {
@@ -82,7 +90,9 @@ function BatchDetailPanel({
                         ...initialBatch,
                         txHash: b.txHash || initialBatch.txHash,
                         qrGenerationStatus: (b.blockchainStatus || "completed").toLowerCase(),
-                        totalPills: b._count?.pills ?? b.totalPillsGenerated ?? initialBatch.totalPills,
+                        totalPills: b.totalPills ?? b._count?.pills ?? b.totalPillsGenerated ?? initialBatch.totalPills,
+                        totalBoxes: b.totalBoxes ?? b._count?.boxes ?? initialBatch.quantityBoxes,
+                        totalCartons: b.totalCartons ?? b._count?.cartons ?? 0,
                     });
 
                     if (b.pills) {
@@ -94,6 +104,8 @@ function BatchDetailPanel({
                             pillQrCode: p.qrCode
                         })));
                     }
+                } else if (data.error) {
+                    toast.error(data.message || "Failed to load details");
                 }
             } catch (err) {
                 console.error("Failed to fetch batch pills:", err);
@@ -103,13 +115,15 @@ function BatchDetailPanel({
             }
         };
 
-        fetchFullDetails();
-    }, [initialBatch.id]);
+        if (session?.token) {
+            fetchFullDetails();
+        }
+    }, [initialBatch.id, session?.token]);
 
-    const getCanvas = (ref: React.RefObject<HTMLDivElement>) =>
+    const getCanvas = (ref: React.RefObject<HTMLDivElement | null>) =>
         ref.current?.querySelector("canvas") as HTMLCanvasElement | null;
 
-    const downloadPng = (ref: React.RefObject<HTMLDivElement>, filename: string) => {
+    const downloadPng = (ref: React.RefObject<HTMLDivElement | null>, filename: string) => {
         const canvas = getCanvas(ref);
         if (!canvas) { toast.error("QR canvas not ready"); return; }
         canvas.toBlob((blob) => {
@@ -119,77 +133,164 @@ function BatchDetailPanel({
     };
 
     const downloadBoxPdf = async () => {
-        const canvas = getCanvas(boxQrRef);
-        if (!canvas) { toast.error("QR canvas not ready"); return; }
-        const dataUrl = canvas.toDataURL("image/png");
-        const t = toast.loading("Generating PDF…");
+        const token = session?.token || "";
+        setIsDownloading(true);
+        const t = toast.loading("Fetching all box records...");
+
         try {
+            const res = await fetch(`/api/manufacturer/batch/${batch.id}?all=true`, {
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+            const data = await res.json();
+            const rawBoxes = data.data?.boxes || [];
+
+            // Map Prisma .qrCode to frontend .boxQrCode
+            const freshBoxes = rawBoxes.map((b: any) => ({
+                id: b.id,
+                boxNumber: b.boxNumber,
+                qrCode: b.qrCode,
+                boxQrCode: b.qrCode
+            }));
+
+            if (freshBoxes.length === 0) {
+                toast.error("No box records found.");
+                toast.dismiss(t);
+                return;
+            }
+
+            toast.message("Generating Box Labels...", { id: t });
+            // For single-box mode, generate the primary label from fresh database records
+            const dataUrl = await QRCode.toDataURL(freshBoxes[0].boxQrCode, { width: 300 });
             const blob = await PrintingService.generateBoxQrPdf(batch, dataUrl);
-            saveAs(blob, `BoxQR_${batch.batchNumber}.pdf`);
+            saveAs(blob, `BoxLabels_${batch.batchNumber}.pdf`);
+
             toast.dismiss(t);
-            toast.success("Box QR PDF downloaded!");
-        } catch {
+            toast.success("Box Labels downloaded!");
+        } catch (err) {
+            console.error("Box PDF generation failed:", err);
+            toast.error("Failed to generate Box PDF.");
             toast.dismiss(t);
-            toast.error("PDF generation failed");
+        } finally {
+            setIsDownloading(false);
+        }
+    };
+
+    const downloadCartonPdf = async () => {
+        const token = session?.token || "";
+        setIsDownloading(true);
+        const t = toast.loading("Fetching carton records...");
+
+        try {
+            const res = await fetch(`/api/manufacturer/batch/${batch.id}?all=true`, {
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+            const data = await res.json();
+
+            const rawCartons = data.data?.cartons || [];
+            const freshCartons = rawCartons.map((c: any) => ({
+                id: c.id,
+                cartonNumber: c.cartonNumber,
+                qrCode: c.qrCode,
+                cartonQrCode: c.qrCode,
+                boxesCount: c.boxesCount || (batch as any).boxesPerCarton || 0
+            }));
+
+            if (freshCartons.length === 0) {
+                toast.error("No carton records found.");
+                toast.dismiss(t);
+                return;
+            }
+
+            toast.message("Generating Carton Labels...", { id: t });
+            const blob = await (PrintingService as any).generateCartonQrPdf(batch, freshCartons);
+            saveAs(blob, `CartonLabels_${batch.batchNumber}.pdf`);
+
+            toast.dismiss(t);
+            toast.success("Carton Labels downloaded!");
+        } catch (err) {
+            console.error("Carton PDF generation failed:", err);
+            toast.error("Failed to generate Carton PDF.");
+            toast.dismiss(t);
+        } finally {
+            setIsDownloading(false);
         }
     };
 
     const downloadPillSheetPdf = async () => {
         const pillCount = batch.totalPills || batchPills.length;
         const isLarge = pillCount > 1000;
-        const sessionStr = localStorage.getItem("mediverify_session") || sessionStorage.getItem("mediverify_session");
-        const token = sessionStr ? JSON.parse(sessionStr).token : "";
+        const token = session?.token || "";
 
         const t = toast.loading(isLarge
             ? `Generating Industrial Sheet (${pillCount.toLocaleString()} pills)... Please wait, do not close.`
             : "Generating Pill Sheet PDF…");
+
         try {
             if (isLarge) {
-                // 1. Initial Request (Triggers generation on server)
-                // Fire and forget to start the process
+                // ... same large batch logic ... (keeping for performance)
                 fetch(`/api/manufacturer/batch/${batch.id}?download=pdf`, {
                     headers: { "Authorization": `Bearer ${token}` }
                 }).catch(() => { });
 
-                // 2. Polling Loop
                 let isReady = false;
                 let attempts = 0;
-                while (!isReady && attempts < 120) { // Max 10 mins
-                    await new Promise(r => setTimeout(r, 5000)); // Poll every 5s
+                while (!isReady && attempts < 120) {
+                    await new Promise(r => setTimeout(r, 5000));
                     const res = await fetch(`/api/manufacturer/batch/${batch.id}?download=pdf&check=true`, {
                         headers: { "Authorization": `Bearer ${token}` }
                     });
                     const data = await res.json();
                     if (data.ready) isReady = true;
                     attempts++;
-                    if (attempts % 6 === 0) toast.message(`Still processing... (${attempts * 5}s)`, { id: t });
                 }
 
                 if (!isReady) throw new Error("Server timeout");
 
-                // 3. Final Fetch (Instant from Cache)
                 const res = await fetch(`/api/manufacturer/batch/${batch.id}?download=pdf`, {
                     headers: { "Authorization": `Bearer ${token}` }
                 });
                 const blob = await res.blob();
                 saveAs(blob, `PillSheet_${batch.batchNumber}.pdf`);
             } else {
-                const blob = await PrintingService.generatePillQrSheetPdf(batch, batchPills);
+                // FRESH FETCH for small batches to avoid "0 pills" issue
+                const res = await fetch(`/api/manufacturer/batch/${batch.id}?all=true`, {
+                    headers: { "Authorization": `Bearer ${token}` }
+                });
+                const data = await res.json();
+
+                // MAP API DATA: Prisma uses .qrCode, PrintingService expects .pillQrCode
+                const rawPills = data.data?.pills || [];
+                const freshPills = rawPills.map((p: any) => ({
+                    id: p.id,
+                    medicineId: batch.id,
+                    pillNumber: p.pillNumber,
+                    pillQrCode: p.qrCode, // Map here
+                    qrStatus: p.status?.toLowerCase() || "active",
+                    qrScanned: p.qrScanned || false,
+                    createdAt: p.createdAt
+                }));
+
+                if (freshPills.length === 0) {
+                    toast.error("No pill records found in database.");
+                    toast.dismiss(t);
+                    return;
+                }
+
+                const blob = await PrintingService.generatePillQrSheetPdf(batch, freshPills);
                 saveAs(blob, `PillSheet_${batch.batchNumber}.pdf`);
             }
             toast.dismiss(t);
             toast.success("Pill Sheet downloaded!");
         } catch (err) {
             toast.dismiss(t);
-            toast.error("Generation failed. Please try again in 1 minute.");
+            toast.error("Generation failed. Please try again.");
         }
     };
 
     const downloadFullRegistryCsv = async () => {
         const t = toast.loading("Preparing Data Registry CSV...");
         try {
-            const sessionStr = localStorage.getItem("mediverify_session") || sessionStorage.getItem("mediverify_session");
-            const token = sessionStr ? JSON.parse(sessionStr).token : "";
+            const token = session?.token || "";
 
             const response = await fetch(`/api/manufacturer/batch/${batch.id}?download=csv`, {
                 headers: { "Authorization": `Bearer ${token}` }
@@ -318,9 +419,10 @@ function BatchDetailPanel({
                         { label: "DRAP License", value: batch.drapLicense },
                         { label: "Manufacturing Date", value: formatDate(batch.manufacturingDate) },
                         { label: "Expiry Date", value: formatDate(batch.expiryDate) },
-                        { label: "Qty (Boxes)", value: (batch.quantityBoxes ?? 0).toLocaleString() },
-                        { label: "Pills Per Box", value: (batch.totalPillsPerBox ?? 0).toString() },
-                        { label: "Total Pills", value: (batch.totalPills ?? 0).toLocaleString() },
+                        { label: "Total Cartons", value: ((batch as any).totalCartons ?? 0).toString() },
+                        { label: "Qty (Boxes)", value: ((batch as any).totalBoxes ?? batch.quantityBoxes ?? 0).toLocaleString() },
+                        { label: "Pills Per Box", value: (batch.pillsPerBox ?? 0).toString() },
+                        { label: "Total Pills", value: ((batch as any).totalPills ?? batch.totalPills ?? 0).toLocaleString() },
                         { label: "Generation Status", value: (batch.qrGenerationStatus || "completed").toUpperCase() },
                         { label: "Registered On", value: formatDate(batch.createdAt) },
                     ].map(({ label, value }) => (
@@ -370,17 +472,48 @@ function BatchDetailPanel({
                 {/* Export / Download Actions */}
                 <div className="rounded-2xl border border-border/40 bg-secondary/20 p-5 space-y-2">
                     <h3 className="text-[12px] font-bold uppercase tracking-wider text-muted-foreground mb-3">Export Options</h3>
-                    <Button className="w-full rounded-xl h-10 gap-2 text-[13px] bg-gradient-primary shadow-elegant" onClick={downloadBoxPdf}>
-                        <FileText className="h-4 w-4" /> Download Box QR Label PDF
+                    <Button
+                        disabled={isDownloading}
+                        className="w-full rounded-xl h-10 gap-2 text-[13px] bg-gradient-primary shadow-elegant"
+                        onClick={downloadCartonPdf}
+                    >
+                        {isDownloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Archive className="h-4 w-4" />}
+                        Download Carton QR Label PDF
                     </Button>
-                    <Button variant="outline" className="w-full rounded-xl h-10 gap-2 text-[13px]" onClick={downloadPillSheetPdf}>
-                        <ArrowDown className="h-4 w-4" /> Download Pill QR Sheet PDF
+                    <Button
+                        disabled={isDownloading}
+                        className="w-full rounded-xl h-10 gap-2 text-[13px] bg-white border border-border hover:bg-secondary/50 text-foreground"
+                        onClick={downloadBoxPdf}
+                    >
+                        {isDownloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4 text-primary" />}
+                        Download Box QR Label PDF
                     </Button>
-                    <Button variant="outline" className="w-full rounded-xl h-10 gap-2 text-[13px]" onClick={downloadCompliancePdf}>
-                        <ShieldCheck className="h-4 w-4" /> Download Compliance Report PDF
+                    <Button
+                        disabled={isDownloading}
+                        variant="outline"
+                        className="w-full rounded-xl h-10 gap-2 text-[13px]"
+                        onClick={downloadPillSheetPdf}
+                    >
+                        {isDownloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowDown className="h-4 w-4" />}
+                        Download Pill QR Sheet PDF
                     </Button>
-                    <Button variant="outline" className="w-full rounded-xl h-10 gap-2 text-[13px] border-primary/30 hover:bg-primary/5" onClick={downloadFullRegistryCsv}>
-                        <Table className="h-4 w-4 text-primary" /> Download Complete Data Registry (CSV)
+                    <Button
+                        disabled={isDownloading}
+                        variant="outline"
+                        className="w-full rounded-xl h-10 gap-2 text-[13px]"
+                        onClick={downloadCompliancePdf}
+                    >
+                        {isDownloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
+                        Download Compliance Report PDF
+                    </Button>
+                    <Button
+                        disabled={isDownloading}
+                        variant="outline"
+                        className="w-full rounded-xl h-10 gap-2 text-[13px] border-primary/30 hover:bg-primary/5"
+                        onClick={downloadFullRegistryCsv}
+                    >
+                        {isDownloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Table className="h-4 w-4 text-primary" />}
+                        Download Complete Data Registry (CSV)
                     </Button>
                 </div>
             </div>
@@ -467,7 +600,7 @@ function BatchCard({ batch, pills, onClick }: { batch: MedicineBatch; pills: Pil
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 function QRLibraryPage() {
-    const { user, isAuthenticated, signOut, isLoading } = useAuth();
+    const { user, isAuthenticated, signOut, isLoading, session } = useAuth();
     const { batches, pills, setBatches } = useQRStore();
     const [search, setSearch] = useState("");
     const [statusFilter, setStatusFilter] = useState<"All" | "Active" | "Recalled" | "Expired">("All");
@@ -477,12 +610,7 @@ function QRLibraryPage() {
         if (isAuthenticated && user?.role === "manufacturer") {
             fetch("/api/manufacturer/batches", {
                 headers: {
-                    "Authorization": `Bearer ${(() => {
-                        try {
-                            const session = localStorage.getItem("mediverify_session") || sessionStorage.getItem("mediverify_session");
-                            return session ? JSON.parse(session).token : "";
-                        } catch { return ""; }
-                    })()}`
+                    "Authorization": `Bearer ${session?.token || ""}`
                 }
             })
                 .then(res => res.json())
@@ -494,7 +622,7 @@ function QRLibraryPage() {
                             medicineName: b.medicine.name,
                             quantityBoxes: b.quantityBoxes ?? 0,
                             totalPills: b.totalPillsGenerated ?? 0,
-                            totalPillsPerBox: b.pillsPerBox ?? 0,
+                            pillsPerBox: b.pillsPerBox ?? 0,
                             manufacturingDate: b.manufacturingDate,
                             expiryDate: b.expiryDate,
                             status: b.medicineStatus === "MANUFACTURED" ? "Active" : b.medicineStatus === "RECALLED" ? "Recalled" : b.medicineStatus === "EXPIRED" ? "Expired" : b.status === "ACTIVE" ? "Active" : b.status === "RECALLED" ? "Recalled" : b.status === "EXPIRED" ? "Expired" : "Active",

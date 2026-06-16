@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
-  url      = env("DATABASE_URL")
+  provider     = "mysql"
+  url          = env("DATABASE_URL")
+  relationMode = "prisma" 
 }
 
 enum Role {
@@ -186,6 +187,7 @@ model Pharmacy {
   location      String?
   riskScore     Float     @default(0)
   isBlacklisted Boolean   @default(false)
+  boxesReceived Box[]
 
   @@map("pharmacy")
 }
@@ -215,6 +217,7 @@ model Batch {
   expiryDate          DateTime
   quantityBoxes       Int        @default(1)
   pillsPerBox         Int        @default(20)
+  boxesPerCarton      Int        @default(10)
   totalPillsGenerated Int        @default(0)
   boxQRCode           String?
   dosageStrength      String?
@@ -226,6 +229,8 @@ model Batch {
   pills               Pill[]
   qrAssets            QRAsset[]
   auditLogs           AuditLog[]
+  cartons             Carton[]
+  boxes               Box[]
   isRecalled          Boolean    @default(false)
   recallReason        String?
   txHash              String?
@@ -240,6 +245,8 @@ model Pill {
   id                 String    @id @default(cuid())
   batchId            String
   batch              Batch     @relation(fields: [batchId], references: [id])
+  boxId              String?
+  box                Box?      @relation(fields: [boxId], references: [id])
   pillNumber         String
   serialNumber       String?
   qrCode             String    @unique
@@ -253,7 +260,49 @@ model Pill {
   createdAt          DateTime  @default(now())
 
   @@index([qrCode])
+  @@index([boxId])
   @@map("pill")
+}
+
+model Carton {
+  id              String    @id @default(cuid())
+  batchId         String
+  batch           Batch     @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  cartonNumber    String    @unique
+  qrCode          String    @unique
+  boxesCount      Int
+  status          String    @default("ACTIVE")
+  scannedAt       DateTime?
+  scannedLocation String?
+  scannedByUserId String?
+  boxes           Box[]
+  createdAt       DateTime  @default(now())
+
+  @@index([batchId])
+  @@map("carton")
+}
+
+model Box {
+  id                String    @id @default(cuid())
+  batchId           String
+  batch             Batch     @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  cartonId          String?
+  carton            Carton?   @relation(fields: [cartonId], references: [id])
+  boxNumber         String    @unique
+  qrCode            String    @unique
+  pillsCount        Int
+  status            String    @default("ACTIVE")
+  pharmacyScannedAt DateTime?
+  pharmacyId        String?
+  pharmacy          Pharmacy? @relation(fields: [pharmacyId], references: [id])
+  patientScannedAt  DateTime?
+  patientUserId     String?
+  pills             Pill[]
+  createdAt         DateTime  @default(now())
+
+  @@index([batchId])
+  @@index([cartonId])
+  @@map("box")
 }
 
 model QRDownload {

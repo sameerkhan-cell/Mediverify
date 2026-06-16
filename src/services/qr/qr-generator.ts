@@ -46,7 +46,7 @@ export function buildPillQrCode(batchNumber: string, pillNumber: string, manufac
 // ── Batch + pill creation ────────────────────────────────────────────────────
 
 function createBatch(form: BatchRegistrationForm): MedicineBatch {
-    const totalPills = form.quantityBoxes * form.totalPillsPerBox;
+    const totalPills = form.quantityBoxes * form.pillsPerBox;
     const batchNumber = form.batchNumber || generateId();
     const manufacturerCode = form.manufacturerCode.toUpperCase();
 
@@ -57,7 +57,7 @@ function createBatch(form: BatchRegistrationForm): MedicineBatch {
         manufacturingDate: form.manufacturingDate,
         expiryDate: form.expiryDate,
         quantityBoxes: form.quantityBoxes,
-        totalPillsPerBox: form.totalPillsPerBox,
+        pillsPerBox: form.pillsPerBox,
         totalPills,
         manufacturerCode,
         drapLicense: form.drapLicense,
@@ -151,7 +151,22 @@ export async function generateDualQR(
         }
     }
 
-    return { batch, pills, totalPillsGenerated: pills.length };
+    // STEP 3 — Create mock Cartons and Boxes metadata for UI consistency
+    const totalCartons = Math.ceil(form.quantityBoxes / form.boxesPerCarton);
+    const cartons = Array.from({ length: totalCartons }, (_, i) => ({
+        id: generateId(),
+        cartonNumber: `CARTON-${(i + 1).toString().padStart(3, "0")}`,
+        qrCode: `CARTON-${batch.batchNumber}-${(i + 1).toString().padStart(3, "0")}-${batch.manufacturerCode}`,
+        boxesCount: Math.min(form.boxesPerCarton, form.quantityBoxes - i * form.boxesPerCarton),
+    }));
+
+    const boxes = Array.from({ length: form.quantityBoxes }, (_, i) => ({
+        id: generateId(),
+        boxNumber: `BOX-${(i + 1).toString().padStart(4, "0")}`,
+        qrCode: `BOX-${batch.batchNumber}-${(i + 1).toString().padStart(4, "0")}-${batch.manufacturerCode}`,
+    }));
+
+    return { batch, pills, totalPillsGenerated: pills.length, cartons, boxes };
 }
 
 // ── QR Canvas export helpers ─────────────────────────────────────────────────
@@ -245,7 +260,7 @@ export function downloadBatchReportHtml(batch: MedicineBatch, totalPills: number
     <tr><td>Manufacturing Date</td><td>${batch.manufacturingDate}</td></tr>
     <tr><td>Expiry Date</td><td>${batch.expiryDate}</td></tr>
     <tr><td>Quantity (Boxes)</td><td>${batch.quantityBoxes.toLocaleString()}</td></tr>
-    <tr><td>Pills Per Box</td><td>${batch.totalPillsPerBox}</td></tr>
+    <tr><td>Pills Per Box</td><td>${batch.pillsPerBox}</td></tr>
     <tr><td>Total Pills</td><td>${totalPills.toLocaleString()}</td></tr>
     <tr><td>Status</td><td><span class="badge">${batch.status}</span></td></tr>
     <tr><td>Blockchain TX</td><td><span class="mono">${batch.txHash}</span></td></tr>

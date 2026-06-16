@@ -32,7 +32,28 @@ export const Route = createAPIFileRoute("/api/manufacturer/batches")({
     GET: async ({ request }: { request: Request }) => {
         try {
             const payload = await authorizeRequest(request, ["MANUFACTURER"]);
+            const url = new URL(request.url);
+            const download = url.searchParams.get("download");
+
             const batches = await BatchService.getManufacturerBatches(payload.userId);
+
+            if (download === "csv") {
+                const csvHeader = "\ufeffBatch Number,Medicine,Total Pills,Status,Registered Date,Expiry Date\n";
+                const csvRows = batches.map(b => {
+                    const mName = b.medicine?.name || "Unknown Medicine";
+                    const regDate = b.createdAt ? new Date(b.createdAt).toISOString().split('T')[0] : "N/A";
+                    const expDate = b.expiryDate ? new Date(b.expiryDate).toISOString().split('T')[0] : "N/A";
+                    return `${b.batchNumber},"${mName}",${b.totalPillsGenerated || 0},${b.status},${regDate},${expDate}`;
+                }).join("\n");
+
+                return new Response(csvHeader + csvRows, {
+                    headers: {
+                        "Content-Type": "text/csv; charset=utf-8",
+                        "Content-Disposition": `attachment; filename="Manufacturer_Batches_${new Date().toISOString().split('T')[0]}.csv"`,
+                    },
+                });
+            }
+
             return Response.json(ApiResponse.success(batches));
         } catch (error: any) {
             const status = error.statusCode || 401;

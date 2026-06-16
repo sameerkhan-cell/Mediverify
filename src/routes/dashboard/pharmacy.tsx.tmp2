@@ -1,0 +1,30 @@
+import { createFileRoute, Navigate } from "@tanstack/react-router";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Stethoscope, PackageCheck, AlertTriangle, Star, ScanLine, ShieldCheck, XCircle, Clock, ArrowRight, TrendingUp,
+  CheckCircle2, Package, RefreshCw, Filter, Activity, UploadCloud, Truck, BrainCircuit, Map, ShieldAlert, FileText, Lock, Users,
+  X, Camera, Loader2
+} from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
+import { DASH_NAV } from "@/config/nav";
+import { ease } from "@/lib/motion";
+import { DashShell } from "@/components/dashboard/DashShell";
+import { StatCard, MetricRow } from "@/components/dashboard/StatCard";
+import { Button } from "@/components/ui/button";
+import {
+  AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip,
+  BarChart, Bar, CartesianGrid,
+} from "recharts";
+import { useState, useEffect, useRef } from "react";
+import { BrowserMultiFormatReader } from "@zxing/library";
+import { VerificationService } from "@/services/verification/verification-service";
+
+export const Route = createFileRoute("/dashboard/pharmacy")({
+  head: () => ({
+    meta: [
+      { title: "Pharmacy Command Center — MediVerify" },
+      { name: "description", content: "Enterprise pharmacy operations, inventory tracking, and AI verification portal." }
+    ]
+  }),
+  component: Page,
+});

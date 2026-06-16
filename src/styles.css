@@ -45,6 +45,21 @@
   --animate-shimmer: shimmer 2.4s linear infinite;
   --animate-gradient: gradient-shift 8s ease infinite;
   --animate-aurora: aurora 14s ease-in-out infinite;
+  --animate-scan-line: scan-line 3s ease-in-out infinite;
+}
+
+@keyframes scan-line {
+
+  0%,
+  100% {
+    top: 5%;
+    opacity: 0.1;
+  }
+
+  50% {
+    top: 95%;
+    opacity: 0.9;
+  }
 }
 
 /* ─── LIGHT PALETTE ─────────────────────────────────────────── */
@@ -355,6 +370,7 @@
   .hide-scrollbar::-webkit-scrollbar {
     display: none;
   }
+
   .no-scrollbar,
   .hide-scrollbar {
     -ms-overflow-style: none;

@@ -71,13 +71,15 @@ export function useBatchGeneration(): UseBatchGenerationReturn {
         try {
             // Phase 1 — Server-side registration (Prisma + MySQL)
             setPhase("registering");
-            const token = (() => {
-                try {
-                    const session = localStorage.getItem("mediverify_session") || sessionStorage.getItem("mediverify_session");
-                    return session ? JSON.parse(session).token : "";
-                } catch { return ""; }
-            })();
-            console.log(`[DEBUG] Attempting batch registration with token: ${token ? "YES" : "NO"}`);
+
+            const session = (await import("@/services/auth")).getStoredSession();
+            const token = session?.token || "";
+
+            if (!token) {
+                throw new Error("Authentication session not found. Please log in again.");
+            }
+
+            console.log(`[DEBUG] Attempting batch registration for: ${form.medicineName}`);
 
             const response = await fetch("/api/manufacturer/register-batch", {
                 method: "POST",
@@ -91,15 +93,20 @@ export function useBatchGeneration(): UseBatchGenerationReturn {
                     manufacturingDate: form.manufacturingDate ? new Date(form.manufacturingDate).toISOString() : new Date().toISOString(),
                     expiryDate: form.expiryDate ? new Date(form.expiryDate).toISOString() : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
                     quantityBoxes: form.quantityBoxes,
-                    pillsPerBox: form.totalPillsPerBox,
+                    pillsPerBox: form.pillsPerBox,
+                    boxesPerCarton: form.boxesPerCarton,
                     category: form.productCategory,
                     allowsExtension: form.isExtension,
                 })
             });
 
+            if (response.status === 401) {
+                throw new Error("Your session has expired. Please log in again to continue.");
+            }
+
             const data = await response.json();
             if (!response.ok) {
-                throw new Error(data.message || "Failed to register batch on server.");
+                throw new Error(data.message || data.error?.message || "Failed to register batch on server.");
             }
 
             const { batch: serverBatch, startPillIndex } = data.data;
@@ -110,7 +117,7 @@ export function useBatchGeneration(): UseBatchGenerationReturn {
             if (abortRef.current) return false;
 
             // Phase 3 — pill QR generation (chunked with progress)
-            const quantityToGenerate = form.quantityBoxes * form.totalPillsPerBox;
+            const quantityToGenerate = form.quantityBoxes * form.pillsPerBox;
             setPhase("generating-pill-qrs", 0, quantityToGenerate);
 
             const generated = await generateDualQR(form, {
@@ -126,10 +133,14 @@ export function useBatchGeneration(): UseBatchGenerationReturn {
             // Merge server data with generated QRs
             const finalResult: DualQRResult = {
                 ...generated,
+                cartons: serverBatch.cartons || generated.cartons,
+                boxes: serverBatch.boxes || generated.boxes,
                 batch: {
                     ...generated.batch,
                     id: serverBatch.id,
                     txHash: serverBatch.txHash || "PENDING_ANCHOR",
+                    quantityBoxes: serverBatch.quantityBoxes || generated.batch.quantityBoxes,
+                    pillsPerBox: serverBatch.pillsPerBox || generated.batch.pillsPerBox,
                 }
             };
 

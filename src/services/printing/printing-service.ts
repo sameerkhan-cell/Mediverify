@@ -14,17 +14,31 @@ export class PrintingService {
     static async generateBoxQrPdf(batch: MedicineBatch, qrDataUrl: string): Promise<Blob> {
         const doc = new jsPDF({
             unit: "mm",
-            format: [45, 45], // 4.5cm x 4.5cm canvas
+            format: [45, 45],
         });
 
-        // 3cm = 30mm
-        doc.addImage(qrDataUrl, "PNG", 7.5, 5, 30, 30);
+        if (!qrDataUrl || !qrDataUrl.startsWith("data:image")) {
+            throw new Error("Invalid box QR image data.");
+        }
+
+        try {
+            // Use auto-detection for format to be safer
+            doc.addImage(qrDataUrl, 7.5, 5, 30, 30);
+        } catch (err) {
+            console.error("Box PDF Image Error:", err);
+            // Fallback: draw a box if image fails
+            doc.setDrawColor(200, 200, 200);
+            doc.rect(7.5, 5, 30, 30);
+            doc.setFontSize(8);
+            doc.text("QR LOAD ERROR", 22.5, 20, { align: "center" });
+        }
 
         doc.setFontSize(6);
         doc.setTextColor(50, 50, 50);
         doc.text(`BATCH: ${batch.batchNumber}`, 22.5, 37, { align: "center" });
         doc.text(`${batch.medicineName}`, 22.5, 40, { align: "center" });
-        doc.text(`EXP: ${batch.expiryDate}`, 22.5, 43, { align: "center" });
+        const expDate = batch.expiryDate ? new Date(batch.expiryDate).toLocaleDateString() : "N/A";
+        doc.text(`EXP: ${expDate}`, 22.5, 43, { align: "center" });
 
         return doc.output("blob");
     }
@@ -76,6 +90,7 @@ export class PrintingService {
         const qrOpts = { margin: 1, width: 120, errorCorrectionLevel: 'H' as const };
 
         for (let i = 0; i < pills.length; i++) {
+            const pill = pills[i];
             const posOnPage = i % CELLS_PER_PAGE;
 
             if (posOnPage === 0 && i > 0) {
@@ -89,17 +104,120 @@ export class PrintingService {
             const x = MARGIN_X + col * CELL_W;
             const y = MARGIN_Y + row * CELL_H;
 
-            try {
-                const uniqueQrDataUrl = await QRCode.toDataURL(pills[i].pillQrCode, qrOpts);
-                doc.addImage(uniqueQrDataUrl, "PNG", x, y, QR_SIZE, QR_SIZE);
-            } catch (err) {
-                console.error(`Failed to generate QR for pill ${pills[i].pillNumber}`, err);
+            // Safety: if pill is missing qrCode, don't crash
+            if (pill.pillQrCode) {
+                try {
+                    const uniqueQrDataUrl = await QRCode.toDataURL(pill.pillQrCode, qrOpts);
+                    doc.addImage(uniqueQrDataUrl, "PNG", x, y, QR_SIZE, QR_SIZE);
+                } catch (err) {
+                    console.error(`Failed to generate QR for pill ${pill.pillNumber}`, err);
+                    doc.setDrawColor(230, 230, 230);
+                    doc.rect(x, y, QR_SIZE, QR_SIZE);
+                    doc.setFontSize(3);
+                    doc.text("ERR", x + QR_SIZE / 2, y + QR_SIZE / 2, { align: "center" });
+                }
+            } else {
+                // Placeholder for missing QR
+                doc.setDrawColor(245, 245, 245);
+                doc.rect(x, y, QR_SIZE, QR_SIZE);
             }
 
             doc.setFontSize(3.5);
             doc.setFont("helvetica", "normal");
             doc.setTextColor(80, 80, 80);
-            doc.text(pills[i].pillNumber, x + QR_SIZE / 2, y + QR_SIZE + 2.5, { align: "center" });
+            doc.text(pill.pillNumber || `#${i + 1}`, x + QR_SIZE / 2, y + QR_SIZE + 2.5, { align: "center" });
+        }
+
+        return doc.output("blob");
+    }
+
+    /**
+     * Generates a PDF for Carton QR(s).
+     * Supports single-large or multi-sheet layouts.
+     */
+    static async generateCartonQrPdf(batch: MedicineBatch, cartons: any[]): Promise<Blob> {
+        const doc = new jsPDF({
+            unit: "mm",
+            format: "a4",
+        });
+
+        const MARGIN_X = 15;
+        const MARGIN_Y = 25;
+        const totalPages = Math.ceil(cartons.length / (cartons.length > 1 ? 12 : 1));
+
+        const addPageHeader = (pageNum: number) => {
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "bold");
+            doc.text("MediVerify · Carton QR Registry", MARGIN_X, 10);
+            doc.setFontSize(7);
+            doc.setFont("helvetica", "normal");
+            doc.text(
+                `${batch.medicineName} — Batch: ${batch.batchNumber} — Cartons: ${cartons.length}  (Page ${pageNum} of ${totalPages})`,
+                MARGIN_X, 16
+            );
+            doc.line(MARGIN_X, 18, doc.internal.pageSize.getWidth() - MARGIN_X, 18);
+        };
+
+        if (cartons.length === 1) {
+            // SINGLE LARGE CARTON LAYOUT (Similar to Box label)
+            const carton = cartons[0];
+            addPageHeader(1);
+
+            const qrSize = 80;
+            const x = (doc.internal.pageSize.getWidth() - qrSize) / 2;
+            const y = 40;
+
+            try {
+                const qrUrl = await QRCode.toDataURL(carton.cartonQrCode || carton.qrCode, { width: 400 });
+                doc.addImage(qrUrl, "PNG", x, y, qrSize, qrSize);
+            } catch {
+                doc.rect(x, y, qrSize, qrSize);
+                doc.text("QR LOAD ERROR", x + qrSize / 2, y + qrSize / 2, { align: "center" });
+            }
+
+            doc.setFontSize(14);
+            doc.setFont("helvetica", "bold");
+            doc.text(`CARTON NO: ${carton.cartonNumber}`, x + qrSize / 2, y + qrSize + 10, { align: "center" });
+            doc.setFontSize(10);
+            doc.text(`CONTAINS ${carton.boxesCount} BOXES`, x + qrSize / 2, y + qrSize + 18, { align: "center" });
+
+        } else {
+            // MULTI-GRID LAYOUT
+            const QR_SIZE = 40;
+            const CELL_W = 60;
+            const CELL_H = 65;
+            const COLS = 3;
+            const ROWS_PER_PAGE = 3;
+            const CELLS_PER_PAGE = COLS * ROWS_PER_PAGE;
+
+            addPageHeader(1);
+
+            for (let i = 0; i < cartons.length; i++) {
+                const carton = cartons[i];
+                const pos = i % CELLS_PER_PAGE;
+                if (pos === 0 && i > 0) {
+                    doc.addPage();
+                    addPageHeader(Math.floor(i / CELLS_PER_PAGE) + 1);
+                }
+
+                const col = pos % COLS;
+                const row = Math.floor(pos / COLS);
+                const x = MARGIN_X + col * CELL_W;
+                const y = MARGIN_Y + row * CELL_H;
+
+                try {
+                    const qrUrl = await QRCode.toDataURL(carton.cartonQrCode || carton.qrCode, { width: 200 });
+                    doc.addImage(qrUrl, "PNG", x + (CELL_W - QR_SIZE) / 2, y, QR_SIZE, QR_SIZE);
+                } catch {
+                    doc.rect(x + (CELL_W - QR_SIZE) / 2, y, QR_SIZE, QR_SIZE);
+                }
+
+                doc.setFontSize(8);
+                doc.setFont("helvetica", "bold");
+                doc.text(carton.cartonNumber, x + CELL_W / 2, y + QR_SIZE + 5, { align: "center" });
+                doc.setFontSize(6);
+                doc.text(`Contains ${carton.boxesCount} Boxes`, x + CELL_W / 2, y + QR_SIZE + 9, { align: "center" });
+            }
         }
 
         return doc.output("blob");
@@ -148,7 +266,7 @@ export class PrintingService {
             ["Manufacturing Date", batch.manufacturingDate],
             ["Expiry Date", batch.expiryDate],
             ["Total Boxes", batch.quantityBoxes.toLocaleString()],
-            ["Pills Per Box", batch.totalPillsPerBox.toString()],
+            ["Pills Per Box", batch.pillsPerBox.toString()],
             ["Total Generated Pills", totalPills.toLocaleString()],
             ["Generation Status", (batch.qrGenerationStatus || "completed").toUpperCase()],
             ["Supply Chain Status", (batch.status || "active").toUpperCase()],

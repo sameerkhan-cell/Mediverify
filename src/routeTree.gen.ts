@@ -33,7 +33,11 @@ import { Route as AuthForgotPasswordRouteImport } from './routes/auth/forgot-pas
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as ApiVerifyIndexRouteImport } from './routes/api/verify/index'
 import { Route as ApiVerifyHistoryRouteImport } from './routes/api/verify/history'
+import { Route as ApiRegulatorStatsRouteImport } from './routes/api/regulator/stats'
+import { Route as ApiRegulatorRecallsRouteImport } from './routes/api/regulator/recalls'
+import { Route as ApiRegulatorHeatmapRouteImport } from './routes/api/regulator/heatmap'
 import { Route as ApiRealtimeFeedRouteImport } from './routes/api/realtime/feed'
+import { Route as ApiPharmacyScanLogsRouteImport } from './routes/api/pharmacy/scan-logs'
 import { Route as ApiManufacturerVerifyCompanyOtpRouteImport } from './routes/api/manufacturer/verify-company-otp'
 import { Route as ApiManufacturerStatsRouteImport } from './routes/api/manufacturer/stats'
 import { Route as ApiManufacturerSendCompanyOtpRouteImport } from './routes/api/manufacturer/send-company-otp'
@@ -195,9 +199,29 @@ const ApiVerifyHistoryRoute = ApiVerifyHistoryRouteImport.update({
   path: '/api/verify/history',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiRegulatorStatsRoute = ApiRegulatorStatsRouteImport.update({
+  id: '/api/regulator/stats',
+  path: '/api/regulator/stats',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiRegulatorRecallsRoute = ApiRegulatorRecallsRouteImport.update({
+  id: '/api/regulator/recalls',
+  path: '/api/regulator/recalls',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiRegulatorHeatmapRoute = ApiRegulatorHeatmapRouteImport.update({
+  id: '/api/regulator/heatmap',
+  path: '/api/regulator/heatmap',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiRealtimeFeedRoute = ApiRealtimeFeedRouteImport.update({
   id: '/api/realtime/feed',
   path: '/api/realtime/feed',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPharmacyScanLogsRoute = ApiPharmacyScanLogsRouteImport.update({
+  id: '/api/pharmacy/scan-logs',
+  path: '/api/pharmacy/scan-logs',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiManufacturerVerifyCompanyOtpRoute =
@@ -469,7 +493,11 @@ export interface FileRoutesByFullPath {
   '/api/manufacturer/send-company-otp': typeof ApiManufacturerSendCompanyOtpRoute
   '/api/manufacturer/stats': typeof ApiManufacturerStatsRoute
   '/api/manufacturer/verify-company-otp': typeof ApiManufacturerVerifyCompanyOtpRoute
+  '/api/pharmacy/scan-logs': typeof ApiPharmacyScanLogsRoute
   '/api/realtime/feed': typeof ApiRealtimeFeedRoute
+  '/api/regulator/heatmap': typeof ApiRegulatorHeatmapRoute
+  '/api/regulator/recalls': typeof ApiRegulatorRecallsRoute
+  '/api/regulator/stats': typeof ApiRegulatorStatsRoute
   '/api/verify/history': typeof ApiVerifyHistoryRoute
   '/api/verify/': typeof ApiVerifyIndexRoute
   '/api/admin/pharmacy/blacklist': typeof ApiAdminPharmacyBlacklistRoute
@@ -536,7 +564,11 @@ export interface FileRoutesByTo {
   '/api/manufacturer/send-company-otp': typeof ApiManufacturerSendCompanyOtpRoute
   '/api/manufacturer/stats': typeof ApiManufacturerStatsRoute
   '/api/manufacturer/verify-company-otp': typeof ApiManufacturerVerifyCompanyOtpRoute
+  '/api/pharmacy/scan-logs': typeof ApiPharmacyScanLogsRoute
   '/api/realtime/feed': typeof ApiRealtimeFeedRoute
+  '/api/regulator/heatmap': typeof ApiRegulatorHeatmapRoute
+  '/api/regulator/recalls': typeof ApiRegulatorRecallsRoute
+  '/api/regulator/stats': typeof ApiRegulatorStatsRoute
   '/api/verify/history': typeof ApiVerifyHistoryRoute
   '/api/verify': typeof ApiVerifyIndexRoute
   '/api/admin/pharmacy/blacklist': typeof ApiAdminPharmacyBlacklistRoute
@@ -604,7 +636,11 @@ export interface FileRoutesById {
   '/api/manufacturer/send-company-otp': typeof ApiManufacturerSendCompanyOtpRoute
   '/api/manufacturer/stats': typeof ApiManufacturerStatsRoute
   '/api/manufacturer/verify-company-otp': typeof ApiManufacturerVerifyCompanyOtpRoute
+  '/api/pharmacy/scan-logs': typeof ApiPharmacyScanLogsRoute
   '/api/realtime/feed': typeof ApiRealtimeFeedRoute
+  '/api/regulator/heatmap': typeof ApiRegulatorHeatmapRoute
+  '/api/regulator/recalls': typeof ApiRegulatorRecallsRoute
+  '/api/regulator/stats': typeof ApiRegulatorStatsRoute
   '/api/verify/history': typeof ApiVerifyHistoryRoute
   '/api/verify/': typeof ApiVerifyIndexRoute
   '/api/admin/pharmacy/blacklist': typeof ApiAdminPharmacyBlacklistRoute
@@ -673,7 +709,11 @@ export interface FileRouteTypes {
     | '/api/manufacturer/send-company-otp'
     | '/api/manufacturer/stats'
     | '/api/manufacturer/verify-company-otp'
+    | '/api/pharmacy/scan-logs'
     | '/api/realtime/feed'
+    | '/api/regulator/heatmap'
+    | '/api/regulator/recalls'
+    | '/api/regulator/stats'
     | '/api/verify/history'
     | '/api/verify/'
     | '/api/admin/pharmacy/blacklist'
@@ -740,7 +780,11 @@ export interface FileRouteTypes {
     | '/api/manufacturer/send-company-otp'
     | '/api/manufacturer/stats'
     | '/api/manufacturer/verify-company-otp'
+    | '/api/pharmacy/scan-logs'
     | '/api/realtime/feed'
+    | '/api/regulator/heatmap'
+    | '/api/regulator/recalls'
+    | '/api/regulator/stats'
     | '/api/verify/history'
     | '/api/verify'
     | '/api/admin/pharmacy/blacklist'
@@ -807,7 +851,11 @@ export interface FileRouteTypes {
     | '/api/manufacturer/send-company-otp'
     | '/api/manufacturer/stats'
     | '/api/manufacturer/verify-company-otp'
+    | '/api/pharmacy/scan-logs'
     | '/api/realtime/feed'
+    | '/api/regulator/heatmap'
+    | '/api/regulator/recalls'
+    | '/api/regulator/stats'
     | '/api/verify/history'
     | '/api/verify/'
     | '/api/admin/pharmacy/blacklist'
@@ -869,7 +917,11 @@ export interface RootRouteChildren {
   ApiManufacturerSendCompanyOtpRoute: typeof ApiManufacturerSendCompanyOtpRoute
   ApiManufacturerStatsRoute: typeof ApiManufacturerStatsRoute
   ApiManufacturerVerifyCompanyOtpRoute: typeof ApiManufacturerVerifyCompanyOtpRoute
+  ApiPharmacyScanLogsRoute: typeof ApiPharmacyScanLogsRoute
   ApiRealtimeFeedRoute: typeof ApiRealtimeFeedRoute
+  ApiRegulatorHeatmapRoute: typeof ApiRegulatorHeatmapRoute
+  ApiRegulatorRecallsRoute: typeof ApiRegulatorRecallsRoute
+  ApiRegulatorStatsRoute: typeof ApiRegulatorStatsRoute
   ApiVerifyHistoryRoute: typeof ApiVerifyHistoryRoute
   ApiVerifyIndexRoute: typeof ApiVerifyIndexRoute
   ApiAdminPharmacyBlacklistRoute: typeof ApiAdminPharmacyBlacklistRoute
@@ -1051,11 +1103,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiVerifyHistoryRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/regulator/stats': {
+      id: '/api/regulator/stats'
+      path: '/api/regulator/stats'
+      fullPath: '/api/regulator/stats'
+      preLoaderRoute: typeof ApiRegulatorStatsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/regulator/recalls': {
+      id: '/api/regulator/recalls'
+      path: '/api/regulator/recalls'
+      fullPath: '/api/regulator/recalls'
+      preLoaderRoute: typeof ApiRegulatorRecallsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/regulator/heatmap': {
+      id: '/api/regulator/heatmap'
+      path: '/api/regulator/heatmap'
+      fullPath: '/api/regulator/heatmap'
+      preLoaderRoute: typeof ApiRegulatorHeatmapRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/realtime/feed': {
       id: '/api/realtime/feed'
       path: '/api/realtime/feed'
       fullPath: '/api/realtime/feed'
       preLoaderRoute: typeof ApiRealtimeFeedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/pharmacy/scan-logs': {
+      id: '/api/pharmacy/scan-logs'
+      path: '/api/pharmacy/scan-logs'
+      fullPath: '/api/pharmacy/scan-logs'
+      preLoaderRoute: typeof ApiPharmacyScanLogsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/manufacturer/verify-company-otp': {
@@ -1464,7 +1544,11 @@ const rootRouteChildren: RootRouteChildren = {
   ApiManufacturerSendCompanyOtpRoute: ApiManufacturerSendCompanyOtpRoute,
   ApiManufacturerStatsRoute: ApiManufacturerStatsRoute,
   ApiManufacturerVerifyCompanyOtpRoute: ApiManufacturerVerifyCompanyOtpRoute,
+  ApiPharmacyScanLogsRoute: ApiPharmacyScanLogsRoute,
   ApiRealtimeFeedRoute: ApiRealtimeFeedRoute,
+  ApiRegulatorHeatmapRoute: ApiRegulatorHeatmapRoute,
+  ApiRegulatorRecallsRoute: ApiRegulatorRecallsRoute,
+  ApiRegulatorStatsRoute: ApiRegulatorStatsRoute,
   ApiVerifyHistoryRoute: ApiVerifyHistoryRoute,
   ApiVerifyIndexRoute: ApiVerifyIndexRoute,
   ApiAdminPharmacyBlacklistRoute: ApiAdminPharmacyBlacklistRoute,
