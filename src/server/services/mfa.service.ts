@@ -164,4 +164,44 @@ export class MfaService {
 
         return true;
     }
+
+    static async sendPasswordResetEmail(
+        toEmail: string,
+        resetUrl: string
+    ): Promise<void> {
+        const mailer = getMailerTransporter();
+        if (!mailer) {
+            console.log(`[PASSWORD_RESET] No mailer configured.`);
+            console.log(`[PASSWORD_RESET] Reset URL for ${toEmail}: ${resetUrl}`);
+            return;
+        }
+
+        const from =
+            process.env.SMTP_FROM ||
+            process.env.SMTP_USER ||
+            "no-reply@mediverify.local";
+
+        await mailer.sendMail({
+            from,
+            to: toEmail,
+            subject: "MediVerify — Reset your password",
+            text: `Reset your password: ${resetUrl}\n\nThis link expires in 1 hour.\nIf you did not request this, ignore this email.`,
+            html: `
+        <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;color:#111827;">
+          <h2 style="margin:0 0 12px;color:#4F46E5;">Reset your MediVerify password</h2>
+          <p style="margin:0 0 20px;color:#6B7280;">
+            Click the button below to set a new password. This link expires in <strong>1 hour</strong>.
+          </p>
+          <a href="${resetUrl}"
+             style="display:inline-block;background:#4F46E5;color:#fff;padding:11px 28px;
+                    border-radius:8px;text-decoration:none;font-weight:600;font-size:14px;">
+            Reset Password
+          </a>
+          <p style="margin:20px 0 0;font-size:12px;color:#9CA3AF;">
+            If you did not request a password reset, you can safely ignore this email.
+          </p>
+        </div>
+      `,
+        });
+    }
 }

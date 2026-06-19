@@ -54,8 +54,7 @@ export function DualQRModal({ open, onClose }: Props) {
         manufacturingDate: new Date().toISOString().slice(0, 7),
         expiryDate: "2027-03",
         quantityBoxes: 100,
-        pillsPerBox: 20,
-        boxesPerCarton: 10,
+        totalPillsPerBox: 20,
         manufacturerCode: MFG_CODE_DEFAULT,
         drapLicense: DRAP_DEFAULT,
     });
@@ -66,9 +65,8 @@ export function DualQRModal({ open, onClose }: Props) {
     const set = (key: keyof BatchRegistrationForm, val: string | number) =>
         setForm((f) => ({ ...f, [key]: val }));
 
-    const totalPills = form.quantityBoxes * form.pillsPerBox;
-    const totalCartons = Math.ceil(form.quantityBoxes / form.boxesPerCarton);
-    const canGenerate = form.medicineName.trim().length > 0 && form.quantityBoxes > 0 && form.pillsPerBox > 0 && form.boxesPerCarton > 0;
+    const totalPills = form.quantityBoxes * form.totalPillsPerBox;
+    const canGenerate = form.medicineName.trim().length > 0 && form.quantityBoxes > 0 && form.totalPillsPerBox > 0;
 
     const handleGenerate = async () => {
         setStep("generating");
@@ -96,31 +94,19 @@ export function DualQRModal({ open, onClose }: Props) {
             manufacturingDate: new Date().toISOString().slice(0, 7),
             expiryDate: "2027-03",
             quantityBoxes: 100,
-            pillsPerBox: 20,
-            boxesPerCarton: 10,
+            totalPillsPerBox: 20,
             manufacturerCode: MFG_CODE_DEFAULT,
             drapLicense: DRAP_DEFAULT,
         });
     };
 
-    const handleCartonDownload = useCallback((canvas: HTMLCanvasElement) => {
-        if (!result?.cartons?.length) return;
-        const dataUrl = exportQRCanvasToPng(
-            canvas,
-            result.cartons[0].qrCode,
-            `MediVerify · ${result.batch.medicineName}`
-        );
-        triggerDownload(dataUrl, `MediVerify-CartonQR-${result.batch.batchNumber}.png`);
-    }, [result]);
-
     const handleBoxDownload = useCallback((canvas: HTMLCanvasElement) => {
-        if (!result) return;
         const dataUrl = exportQRCanvasToPng(
             canvas,
-            result.boxes[0].qrCode,
-            `MediVerify · ${result.batch.medicineName}`
+            result?.batch.boxQrCode ?? "",
+            `MediVerify · ${result?.batch.medicineName ?? ""}`
         );
-        triggerDownload(dataUrl, `MediVerify-BoxQR-${result.batch.batchNumber}.png`);
+        triggerDownload(dataUrl, `MediVerify-BoxQR-${result?.batch.batchNumber ?? "batch"}.png`);
     }, [result]);
 
     const handlePillDownload = useCallback((canvas: HTMLCanvasElement) => {
@@ -135,7 +121,7 @@ export function DualQRModal({ open, onClose }: Props) {
     const stepTitles: Record<ModalStep, { title: string; sub: string }> = {
         form: { title: "Register Batch + Generate Dual QR", sub: "Box QR & per-pill QR codes for Pakistan-style dispensing" },
         generating: { title: "Generating Dual QR Architecture", sub: "Please wait — minting on MediVerify blockchain…" },
-        result: { title: "Dual QR System Ready", sub: `${result?.totalPillsGenerated?.toLocaleString() ?? 0} pill QRs + ${result?.boxes.length.toLocaleString() ?? 0} box QRs + ${result?.cartons.length.toLocaleString() ?? 0} carton QRs generated` },
+        result: { title: "Dual QR System Ready", sub: `${result?.totalPillsGenerated?.toLocaleString() ?? 0} pill QRs + 1 box QR generated` },
         downloads: { title: "Download Center", sub: "Export all QR codes and batch documentation" },
     };
 
@@ -223,9 +209,9 @@ export function DualQRModal({ open, onClose }: Props) {
                                         <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 flex gap-3">
                                             <ShieldCheck className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                                             <div>
-                                                <p className="text-[13px] font-semibold text-primary">Supply Chain Hierarchy</p>
+                                                <p className="text-[13px] font-semibold text-primary">Dual QR Architecture</p>
                                                 <p className="text-[12px] text-foreground/70 mt-0.5">
-                                                    {totalCartons} Carton QR + {form.quantityBoxes} Box QR + {totalPills > 0 ? <strong>{totalPills.toLocaleString()}</strong> : "N"} individual Pill QRs will be generated automatically.
+                                                    1 Box QR + {totalPills > 0 ? <strong>{totalPills.toLocaleString()}</strong> : "N"} individual Pill QRs will be generated automatically.
                                                 </p>
                                             </div>
                                         </div>
@@ -285,7 +271,7 @@ export function DualQRModal({ open, onClose }: Props) {
                                             </FieldRow>
                                         </div>
 
-                                        {/* Quantity + Pills Per Box + Boxes Per Carton */}
+                                        {/* Quantity + Pills Per Box */}
                                         <div className="grid grid-cols-2 gap-4">
                                             <FieldRow icon={Package} label="Quantity (Boxes)">
                                                 <Input
@@ -302,34 +288,18 @@ export function DualQRModal({ open, onClose }: Props) {
                                                     type="number"
                                                     min={1}
                                                     max={1000}
-                                                    value={form.pillsPerBox}
-                                                    onChange={(e) => set("pillsPerBox", Math.max(1, parseInt(e.target.value) || 1))}
+                                                    value={form.totalPillsPerBox}
+                                                    onChange={(e) => set("totalPillsPerBox", Math.max(1, parseInt(e.target.value) || 1))}
                                                     className="h-11 rounded-xl text-[14px] bg-secondary/20"
                                                 />
                                             </FieldRow>
                                         </div>
 
-                                        <FieldRow icon={Layers} label="Boxes Per Carton">
-                                            <Input
-                                                type="number"
-                                                min={1}
-                                                max={1000}
-                                                value={form.boxesPerCarton}
-                                                onChange={(e) => set("boxesPerCarton", Math.max(1, parseInt(e.target.value) || 10))}
-                                                className="h-11 rounded-xl text-[14px] bg-secondary/20"
-                                            />
-                                        </FieldRow>
-
                                         {/* Pill count preview */}
                                         <div className="rounded-xl border border-success/20 bg-success/5 px-4 py-3 flex items-center justify-between">
-                                            <div className="flex flex-col">
-                                                <div className="flex items-center gap-2">
-                                                    <Pill className="h-4 w-4 text-success" />
-                                                    <span className="text-[13px] font-medium text-success">Total Pill QRs to generate:</span>
-                                                </div>
-                                                <span className="text-[10px] text-muted-foreground mt-0.5 ml-6">
-                                                    {totalCartons} cartons → {form.quantityBoxes} boxes → {totalPills.toLocaleString()} pills
-                                                </span>
+                                            <div className="flex items-center gap-2">
+                                                <Pill className="h-4 w-4 text-success" />
+                                                <span className="text-[13px] font-medium">Total Pill QRs to generate:</span>
                                             </div>
                                             <span className="font-mono text-[18px] font-black text-success tabular-nums">
                                                 {totalPills.toLocaleString()}
@@ -410,26 +380,16 @@ export function DualQRModal({ open, onClose }: Props) {
                                                 </div>
                                             </div>
 
-                                            {/* Hierarchy QR Cards */}
-                                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                                                {/* Carton QR */}
-                                                <DualQRCard
-                                                    type="box"
-                                                    qrValue={result.cartons[0]?.qrCode ?? ""}
-                                                    label={`Carton #001 of ${result.cartons.length}`}
-                                                    sublabel={`${result.batch.medicineName} · ${result.cartons[0]?.boxesCount} boxes inside`}
-                                                    badge="Carton Label"
-                                                    onDownloadPng={handleCartonDownload}
-                                                />
-
+                                            {/* Dual QR Cards */}
+                                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                                 {/* Box QR */}
                                                 <div ref={boxQrRef}>
                                                     <DualQRCard
                                                         type="box"
-                                                        qrValue={result.boxes[0]?.qrCode ?? ""}
-                                                        label={`Box #0001 of ${result.boxes.length}`}
-                                                        sublabel={`${result.batch.medicineName} · ${result.batch.pillsPerBox} pills`}
-                                                        badge="Box Label"
+                                                        qrValue={result.batch.boxQrCode}
+                                                        label={result.batch.medicineName}
+                                                        sublabel={`Batch: ${result.batch.batchNumber}`}
+                                                        badge="1 per batch"
                                                         onDownloadPng={handleBoxDownload}
                                                     />
                                                 </div>
@@ -446,10 +406,9 @@ export function DualQRModal({ open, onClose }: Props) {
                                             </div>
 
                                             {/* Summary row */}
-                                            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                                            <div className="grid grid-cols-3 gap-3">
                                                 {[
-                                                    { label: "Cartons", value: result.cartons.length.toLocaleString(), color: "text-primary", bg: "bg-primary/10" },
-                                                    { label: "Box QRs", value: result.boxes.length.toLocaleString(), color: "text-primary", bg: "bg-primary/10" },
+                                                    { label: "Box QRs", value: "1", color: "text-primary", bg: "bg-primary/10" },
                                                     { label: "Pill QRs", value: result.totalPillsGenerated.toLocaleString(), color: "text-success", bg: "bg-success/10" },
                                                     { label: "Boxes", value: result.batch.quantityBoxes.toLocaleString(), color: "text-foreground", bg: "bg-secondary/50" },
                                                 ].map((m) => (

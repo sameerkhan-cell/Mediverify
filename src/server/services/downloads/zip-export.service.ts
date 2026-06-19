@@ -25,12 +25,12 @@ export class ZIPExportService {
 
         // ── PERFORMANCE OPTIMIZATION: Parallel Asset Generation ──
         // Process in chunks to maintain responsiveness and avoid memory exhaust
-        const CONCURRENCY = 25;
+        const CONCURRENCY = 75;
         for (let i = 0; i < pills.length; i += CONCURRENCY) {
             const chunk = pills.slice(i, i + CONCURRENCY);
 
             const qrTasks = chunk.map(pill =>
-                QRService.generateDataURL(pill.qrCode, { width: 400 })
+                QRService.generateDataURL(pill.qrCode, { width: 200 })
                     .then(qrDataUrl => ({
                         filename: `${pill.qrCode}.png`,
                         data: qrDataUrl.replace(/^data:image\/png;base64,/, "")
@@ -63,8 +63,9 @@ export class ZIPExportService {
 
         const buffer = await zip.generateAsync({
             type: "nodebuffer",
-            compression: "DEFLATE",
-            compressionOptions: { level: 6 },
+            // PNGs are already internally compressed; DEFLATE adds CPU with near-zero size gain.
+            // STORE skips re-compression entirely for maximum throughput.
+            compression: "STORE",
         });
 
         const duration = (Date.now() - startTime) / 1000;

@@ -6,7 +6,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { VerificationService } from "@/services/verification/verification-service";
 import { Link } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/verify-lite")({
@@ -28,10 +27,62 @@ function LiteVerifyPage() {
         if (!code) return;
         setLoading(true);
         try {
-            const res = await VerificationService.verifyCode(code);
-            setResult(res);
-        } catch (e) {
-            setResult({ status: "error", message: "Network connection lost." });
+            const res = await fetch("/api/verify", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    code: code.trim().toUpperCase(),
+                    location: "Lite Verification Portal",
+                    deviceInfo: "MediVerify Public Verify",
+                }),
+            });
+
+            const data = await res.json();
+
+            if (!res.ok || !data.success) {
+                setResult({
+                    isValid: false,
+                    status: "invalid",
+                    message: data.message || "Verification failed. Please try again.",
+                });
+                return;
+            }
+
+            const d = data.data;
+            const resultType = (d.resultType ?? "INVALID").toUpperCase();
+
+            setResult({
+                isValid: resultType === "GENUINE",
+                status:
+                    resultType === "GENUINE" ? "genuine"
+                    : resultType === "DUPLICATE" ? "duplicate"
+                    : resultType === "SUSPICIOUS" || resultType === "EXPIRED" ? "suspected"
+                    : "invalid",
+                message: d.message || "Verification complete.",
+                batchDetails:
+                    d.batch && d.medicine && d.manufacturer
+                        ? {
+                            name: d.medicine.name,
+                            batchNumber: d.batch.batchNumber,
+                            manufacturer: d.manufacturer.companyName,
+                            expiry: d.batch.expiryDate
+                                ? new Date(d.batch.expiryDate).toLocaleDateString("en-PK", {
+                                    year: "numeric",
+                                    month: "short",
+                                })
+                                : "N/A",
+                            txHash: d.blockchain?.txHash || "PENDING",
+                        }
+                        : undefined,
+                warnings: d.warnings ?? [],
+                riskScore: d.riskScore ?? 0,
+            });
+        } catch {
+            setResult({
+                isValid: false,
+                status: "invalid",
+                message: "Network error. Please check your connection and try again.",
+            });
         } finally {
             setLoading(false);
         }

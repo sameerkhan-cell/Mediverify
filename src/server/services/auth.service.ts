@@ -318,6 +318,18 @@ export class AuthService {
             }
 
             console.log(`[AUTH] Google login successful: ${email}`);
+
+            // Enforce MFA for MANUFACTURER role — same as password login
+            if (user.role === "MANUFACTURER") {
+                const { MfaService } = await import("./mfa.service");
+                await MfaService.generateAndSendOtp(user.id, user.email);
+                return {
+                    status: "PENDING_MFA",
+                    message: "A verification code has been sent to your email.",
+                    email: user.email,
+                } as any;
+            }
+
             return this.generateAuthResponse(user, { userAgent, ipAddress });
         } catch (error: any) {
             console.error("[AUTH_ERROR] Google token verification failed:", error);

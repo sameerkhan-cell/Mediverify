@@ -143,7 +143,28 @@ function LoginPage() {
     window.google.accounts.id.initialize({
       client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || "your-google-client-id.apps.googleusercontent.com",
       callback: async (response: any) => {
-        const res = await authService.googleLogin(response.credential, selectedRole);
+        const res = await authService.googleLogin(
+          response.credential,
+          selectedRole
+        );
+
+        // MFA required (manufacturer via Google)
+        if ((res as any).pendingMfa) {
+          toast.info("Verification required", {
+            description:
+              (res as any).message ||
+              "Enter the 6-digit code sent to your email.",
+            duration: 8000,
+          });
+          navigate({
+            to: "/auth/verify-mfa",
+            search: {
+              email: (res as any).email,
+              rememberMe: true,
+            } as any,
+          });
+          return;
+        }
 
         if (!res.success || !res.data) {
           toast.error(res.error?.message ?? "Google login failed.");
@@ -155,7 +176,6 @@ function LoginPage() {
           description: `Signed in with Google as ${res.data.user.fullName}`,
         });
 
-        // Redirect based on role
         const role = res.data.user.role;
         if (role === "pharmacy") {
           navigate({ to: "/dashboard/pharmacy" });

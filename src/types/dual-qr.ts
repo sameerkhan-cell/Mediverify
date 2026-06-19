@@ -6,11 +6,10 @@ export interface BatchRegistrationForm {
     manufacturingDate: string;
     expiryDate: string;
     quantityBoxes: number;
-    pillsPerBox: number;
+    totalPillsPerBox: number;
     manufacturerCode: string;
     drapLicense: string;
     productCategory: string;
-    boxesPerCarton: number;
     isExtension?: boolean;
 }
 
@@ -21,7 +20,7 @@ export interface MedicineBatch {
     manufacturingDate: string;
     expiryDate: string;
     quantityBoxes: number;
-    pillsPerBox: number;
+    totalPillsPerBox: number;
     totalPills: number;
     manufacturerCode: string;
     drapLicense: string;
@@ -48,26 +47,9 @@ export interface PillRecord {
     createdAt: string;
 }
 
-export interface CartonRecord {
-    id: string;
-    cartonNumber: string;
-    qrCode: string; // From database
-    cartonQrCode: string; // Unified for printing
-    boxesCount: number;
-}
-
-export interface BoxRecord {
-    id: string;
-    boxNumber: string;
-    qrCode: string; // From database
-    boxQrCode: string; // Unified for printing
-}
-
 export interface DualQRResult {
     batch: MedicineBatch;
     pills: PillRecord[];
-    cartons: CartonRecord[];
-    boxes: BoxRecord[];
     totalPillsGenerated: number;
 }
 

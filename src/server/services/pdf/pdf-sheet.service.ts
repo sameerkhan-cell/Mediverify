@@ -14,11 +14,12 @@ export class PDFSheetService {
         const cacheDir = path.join(process.cwd(), "storage", "qr-assets", batch.id);
         const cachePath = path.join(cacheDir, cacheFileName);
 
-        // 1. CACHE CHECK: If already generated, return instantly
+        /* 
         if (fs.existsSync(cachePath)) {
             console.log(`[PDFSheetService] Serving cached PDF for batch ${batch.batchNumber}`);
             return fs.readFileSync(cachePath);
         }
+        */
 
         const startTime = Date.now();
         console.log(`[PDFSheetService] Starting industrial generation for ${pills.length} pills...`);
@@ -58,18 +59,15 @@ export class PDFSheetService {
         let currentX = margin;
         let currentY = 30;
 
-        // ── PERFORMANCE OPTIMIZATION: High-Throughput Parallel Generation ──
-        // Increased concurrency to 150 to maximize CPU/Memory efficiency for large batches
-        const CONCURRENCY = 150;
+        // ── PERFORMANCE OPTIMIZATION: Parallel QR Generation ──
+        // Increased concurrency to 50 for faster throughput (supported by 4GB heap)
+        const CONCURRENCY = 50;
         for (let i = 0; i < pills.length; i += CONCURRENCY) {
             const chunk = pills.slice(i, i + CONCURRENCY);
 
             const qrTasks = chunk.map(pill =>
-                QRService.generateDataURL(pill.qrCode, {
-                    width: 80, // Reduced resolution for faster encoding without losing scanability
-                    margin: 0,
-                    errorCorrectionLevel: 'M' // Standard reliability for faster generation
-                }).then(dataUrl => ({ pill, dataUrl }))
+                QRService.generateDataURL(pill.qrCode, { width: 100, margin: 0 })
+                    .then(dataUrl => ({ pill, dataUrl }))
             );
 
             const results = await Promise.all(qrTasks);
@@ -84,12 +82,29 @@ export class PDFSheetService {
                 }
 
                 doc.addImage(dataUrl, 'PNG', currentX + (cellWidth - qrSize) / 2, currentY + 2, qrSize, qrSize);
-                doc.setFontSize(7);
+                const fullCode = String(pill.qrCode);
+                const parts = fullCode.split('-');
+                let displayLines = [fullCode];
+                if (parts.length >= 5) {
+                    displayLines = [
+                        parts.slice(0, 2).join('-') + '-',
+                        parts.slice(2, 4).join('-') + '-',
+                        parts.slice(4).join('-')
+                    ];
+                } else if (parts.length >= 3) {
+                    displayLines = [
+                        parts.slice(0, 2).join('-') + '-',
+                        parts.slice(2).join('-')
+                    ];
+                }
                 doc.setFont("courier", "bold");
-                doc.text(`${pill.qrCode}`, currentX + cellWidth / 2, currentY + qrSize + 6, { align: 'center' });
+                doc.setFontSize(4.5);
+                doc.setLineHeightFactor(1.15);
+                doc.text(displayLines, currentX + cellWidth / 2, currentY + qrSize + 5, { align: 'center' });
+
                 doc.setFont("helvetica", "normal");
-                doc.setFontSize(6);
-                doc.text(`SN: ${pill.pillNumber}`, currentX + cellWidth / 2, currentY + qrSize + 10, { align: 'center' });
+                doc.setFontSize(5.5);
+                doc.text(`SN: ${pill.pillNumber}`, currentX + cellWidth / 2, currentY + qrSize + 13.5, { align: 'center' });
 
                 count++;
                 if (count % cols === 0) {

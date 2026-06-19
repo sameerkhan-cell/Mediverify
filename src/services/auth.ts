@@ -20,8 +20,10 @@ export function getStoredSession(): AuthSession | null {
       sessionStorage.getItem(SESSION_KEY);
     if (!raw) return null;
     const session: AuthSession = JSON.parse(raw);
-    // Let the backend handle true token expiration (JWT)
-    // Local expiration check can be too strict or out of sync
+    if (Date.now() > session.expiresAt) {
+      clearSession();
+      return null;
+    }
     return session;
   } catch {
     return null;
@@ -71,12 +73,12 @@ async function handleResponse<T>(response: Response): Promise<AuthResponse<T>> {
 export type LoginResult =
   | (AuthResponse<AuthSession> & { pendingMfa?: false })
   | {
-    success: false;
-    pendingMfa: true;
-    message: string;
-    email: string;
-    error?: AuthResponse["error"];
-  };
+      success: false;
+      pendingMfa: true;
+      message: string;
+      email: string;
+      error?: AuthResponse["error"];
+    };
 
 export const authService = {
   async login(creds: LoginCredentials): Promise<LoginResult> {
@@ -235,13 +237,27 @@ export const authService = {
     });
 
     const result = await handleResponse<any>(response);
-    if (result.success && result.data) {
+
+    // Handle MFA required for manufacturers
+    if (result.success && result.data?.status === "PENDING_MFA") {
+      return {
+        success: false,
+        pendingMfa: true,
+        message: result.data.message || "Verification code sent to your email.",
+        email: result.data.email,
+      } as any;
+    }
+
+    if (result.success && result.data?.user && result.data?.tokens) {
       const session: AuthSession = {
         user: {
           id: result.data.user.id,
           email: result.data.user.email,
           fullName: result.data.user.name,
-          role: result.data.user.role.toLowerCase() === "patient" ? "customer" : result.data.user.role.toLowerCase(),
+          role:
+            result.data.user.role.toLowerCase() === "patient"
+              ? "customer"
+              : result.data.user.role.toLowerCase(),
           emailVerified: true,
           createdAt: new Date().toISOString(),
         },
@@ -250,6 +266,7 @@ export const authService = {
       };
       return { ...result, data: session };
     }
+
     return result;
   },
   async resendMfa(email: string): Promise<AuthResponse<{ emailed: boolean; email: string }>> {

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Upload, MapPin, ShieldAlert, CheckCircle2, AlertTriangle, Clock, Shield, Loader2 } from "lucide-react";
 import { SiteLayout } from "@/components/site/SiteLayout";
@@ -24,6 +24,54 @@ const STAGES = ["Submitted", "DRAP review", "Lab analysis", "Resolved"];
 function Page() {
   const { isAuthenticated, isLoading } = useAuth();
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    const form = e.currentTarget;
+    const data = new FormData(form);
+
+    const medicineName = (data.get("medicineName") as string) || "";
+    const batchNumber = (data.get("batchNumber") as string) || "";
+    const pharmacyName = (data.get("pharmacyName") as string) || "";
+    const description = (data.get("description") as string) || "";
+
+    try {
+      // Get token if logged in
+      const raw =
+        typeof window !== "undefined"
+          ? localStorage.getItem("mediverify_session") ??
+            sessionStorage.getItem("mediverify_session")
+          : null;
+      const token = raw ? JSON.parse(raw)?.token : null;
+
+      const res = await fetch("/api/report", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ medicineName, batchNumber, pharmacyName, description }),
+      });
+
+      const result = await res.json();
+
+      if (!res.ok || !result.success) {
+        setSubmitError(result.message || "Submission failed. Please try again.");
+        return;
+      }
+
+      setSubmitted(true);
+    } catch {
+      setSubmitError("Network error. Please check your connection and try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -79,7 +127,7 @@ function Page() {
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1, duration: 0.6, ease }}
-            onSubmit={(e) => { e.preventDefault(); setSubmitted(true); }}
+            onSubmit={handleSubmit}
             className="card-premium space-y-6 p-7 relative overflow-hidden"
           >
             {/* Top accent */}
@@ -88,17 +136,17 @@ function Page() {
             <div className="grid gap-5 sm:grid-cols-2">
               <div>
                 <Label className="text-[13px] font-medium">Medicine name</Label>
-                <Input className="mt-2 rounded-xl" placeholder="e.g. Augmentin 625" required maxLength={120} />
+                <Input name="medicineName" className="mt-2 rounded-xl" placeholder="e.g. Augmentin 625" required maxLength={120} />
               </div>
               <div>
                 <Label className="text-[13px] font-medium">Batch number</Label>
-                <Input className="mt-2 rounded-xl" placeholder="e.g. AUG-77821-C" required maxLength={60} />
+                <Input name="batchNumber" className="mt-2 rounded-xl" placeholder="e.g. AUG-77821-C" required maxLength={60} />
               </div>
             </div>
             <div className="grid gap-5 sm:grid-cols-2">
               <div>
                 <Label className="text-[13px] font-medium">Pharmacy / source</Label>
-                <Input className="mt-2 rounded-xl" placeholder="Where did you buy it?" maxLength={200} />
+                <Input name="pharmacyName" className="mt-2 rounded-xl" placeholder="Where did you buy it?" maxLength={200} />
               </div>
               <div>
                 <Label className="text-[13px] font-medium flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />City</Label>
@@ -107,7 +155,7 @@ function Page() {
             </div>
             <div>
               <Label className="text-[13px] font-medium">Description</Label>
-              <Textarea className="mt-2 min-h-32 rounded-xl" placeholder="Describe the suspicion: packaging, color, side-effects…" maxLength={1000} />
+              <Textarea name="description" className="mt-2 min-h-32 rounded-xl" placeholder="Describe the suspicion: packaging, color, side-effects…" maxLength={1000} />
             </div>
             <div>
               <Label className="text-[13px] font-medium">Upload photos</Label>
@@ -117,8 +165,13 @@ function Page() {
                 <input type="file" accept="image/*" multiple className="hidden" />
               </label>
             </div>
-            <Button type="submit" size="lg" className="w-full rounded-full bg-gradient-primary shadow-elegant text-[14px] font-medium transition-all duration-300 hover:shadow-card-hover hover:scale-[1.01] ripple-btn btn-magnetic">
-              Submit report to DRAP
+            {submitError && (
+              <p className="text-[13px] text-destructive flex items-center gap-1.5">
+                <span>⚠</span> {submitError}
+              </p>
+            )}
+            <Button type="submit" size="lg" disabled={isSubmitting} className="w-full rounded-full bg-gradient-primary shadow-elegant text-[14px] font-medium transition-all duration-300 hover:shadow-card-hover hover:scale-[1.01] ripple-btn btn-magnetic">
+              {isSubmitting ? "Submitting…" : "Submit report to DRAP"}
             </Button>
 
             <AnimatePresence>

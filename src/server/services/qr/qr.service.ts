@@ -61,19 +61,11 @@ export class QRService {
     }
 
     /**
-     * Format for Carton QR: CARTON-{BatchNumber}-{CartonIndex}-{CompanyCode}
+     * Format for Box QR:  BOX-{BatchNumber}-{CompanyCode}
+     * Example:            BOX-PND2024-A1-MFG-GSK001
      */
-    static formatCartonCode(batchNumber: string, cartonIndex: number, companyCode: string): string {
-        const idx = cartonIndex.toString().padStart(3, "0");
-        return `CARTON-${batchNumber.toUpperCase()}-${idx}-${companyCode.toUpperCase()}`;
-    }
-
-    /**
-     * Format for Box QR:  BOX-{BatchNumber}-{BoxIndex}-{CompanyCode}
-     */
-    static formatBoxCode(batchNumber: string, boxIndex: number, companyCode: string): string {
-        const idx = boxIndex.toString().padStart(4, "0");
-        return `BOX-${batchNumber.toUpperCase()}-${idx}-${companyCode.toUpperCase()}`;
+    static formatBoxCode(batchNumber: string, companyCode: string): string {
+        return `BOX-${batchNumber.toUpperCase()}-${companyCode.toUpperCase()}`;
     }
 
     /**

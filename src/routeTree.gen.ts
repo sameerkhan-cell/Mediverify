@@ -32,6 +32,7 @@ import { Route as AuthLoginRouteImport } from './routes/auth/login'
 import { Route as AuthForgotPasswordRouteImport } from './routes/auth/forgot-password'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as ApiVerifyIndexRouteImport } from './routes/api/verify/index'
+import { Route as ApiReportIndexRouteImport } from './routes/api/report/index'
 import { Route as ApiVerifyHistoryRouteImport } from './routes/api/verify/history'
 import { Route as ApiRegulatorStatsRouteImport } from './routes/api/regulator/stats'
 import { Route as ApiRegulatorRecallsRouteImport } from './routes/api/regulator/recalls'
@@ -54,6 +55,7 @@ import { Route as ApiFraudAnalyzeRouteImport } from './routes/api/fraud/analyze'
 import { Route as ApiFraudAlertsRouteImport } from './routes/api/fraud/alerts'
 import { Route as ApiBlockchainStatusRouteImport } from './routes/api/blockchain/status'
 import { Route as ApiAuthSignupRouteImport } from './routes/api/auth/signup'
+import { Route as ApiAuthResetPasswordRouteImport } from './routes/api/auth/reset-password'
 import { Route as ApiAuthRefreshRouteImport } from './routes/api/auth/refresh'
 import { Route as ApiAuthProfileRouteImport } from './routes/api/auth/profile'
 import { Route as ApiAuthMfaResendRouteImport } from './routes/api/auth/mfa-resend'
@@ -62,6 +64,7 @@ import { Route as ApiAuthMeRouteImport } from './routes/api/auth/me'
 import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
 import { Route as ApiAuthLoginRouteImport } from './routes/api/auth/login'
 import { Route as ApiAuthGoogleRouteImport } from './routes/api/auth/google'
+import { Route as ApiAuthForgotPasswordRouteImport } from './routes/api/auth/forgot-password'
 import { Route as ApiAuthChangePasswordRouteImport } from './routes/api/auth/change-password'
 import { Route as ApiAiInsightsRouteImport } from './routes/api/ai/insights'
 import { Route as ApiAdminDashboardRouteImport } from './routes/api/admin/dashboard'
@@ -194,6 +197,11 @@ const ApiVerifyIndexRoute = ApiVerifyIndexRouteImport.update({
   path: '/api/verify/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiReportIndexRoute = ApiReportIndexRouteImport.update({
+  id: '/api/report/',
+  path: '/api/report/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiVerifyHistoryRoute = ApiVerifyHistoryRouteImport.update({
   id: '/api/verify/history',
   path: '/api/verify/history',
@@ -311,6 +319,11 @@ const ApiAuthSignupRoute = ApiAuthSignupRouteImport.update({
   path: '/api/auth/signup',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAuthResetPasswordRoute = ApiAuthResetPasswordRouteImport.update({
+  id: '/api/auth/reset-password',
+  path: '/api/auth/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAuthRefreshRoute = ApiAuthRefreshRouteImport.update({
   id: '/api/auth/refresh',
   path: '/api/auth/refresh',
@@ -349,6 +362,11 @@ const ApiAuthLoginRoute = ApiAuthLoginRouteImport.update({
 const ApiAuthGoogleRoute = ApiAuthGoogleRouteImport.update({
   id: '/api/auth/google',
   path: '/api/auth/google',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthForgotPasswordRoute = ApiAuthForgotPasswordRouteImport.update({
+  id: '/api/auth/forgot-password',
+  path: '/api/auth/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAuthChangePasswordRoute = ApiAuthChangePasswordRouteImport.update({
@@ -469,6 +487,7 @@ export interface FileRoutesByFullPath {
   '/api/admin/dashboard': typeof ApiAdminDashboardRoute
   '/api/ai/insights': typeof ApiAiInsightsRoute
   '/api/auth/change-password': typeof ApiAuthChangePasswordRoute
+  '/api/auth/forgot-password': typeof ApiAuthForgotPasswordRoute
   '/api/auth/google': typeof ApiAuthGoogleRoute
   '/api/auth/login': typeof ApiAuthLoginRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
@@ -477,6 +496,7 @@ export interface FileRoutesByFullPath {
   '/api/auth/mfa-resend': typeof ApiAuthMfaResendRoute
   '/api/auth/profile': typeof ApiAuthProfileRoute
   '/api/auth/refresh': typeof ApiAuthRefreshRoute
+  '/api/auth/reset-password': typeof ApiAuthResetPasswordRoute
   '/api/auth/signup': typeof ApiAuthSignupRoute
   '/api/blockchain/status': typeof ApiBlockchainStatusRoute
   '/api/fraud/alerts': typeof ApiFraudAlertsRoute
@@ -499,6 +519,7 @@ export interface FileRoutesByFullPath {
   '/api/regulator/recalls': typeof ApiRegulatorRecallsRoute
   '/api/regulator/stats': typeof ApiRegulatorStatsRoute
   '/api/verify/history': typeof ApiVerifyHistoryRoute
+  '/api/report/': typeof ApiReportIndexRoute
   '/api/verify/': typeof ApiVerifyIndexRoute
   '/api/admin/pharmacy/blacklist': typeof ApiAdminPharmacyBlacklistRoute
   '/api/admin/recall/create': typeof ApiAdminRecallCreateRoute
@@ -540,6 +561,7 @@ export interface FileRoutesByTo {
   '/api/admin/dashboard': typeof ApiAdminDashboardRoute
   '/api/ai/insights': typeof ApiAiInsightsRoute
   '/api/auth/change-password': typeof ApiAuthChangePasswordRoute
+  '/api/auth/forgot-password': typeof ApiAuthForgotPasswordRoute
   '/api/auth/google': typeof ApiAuthGoogleRoute
   '/api/auth/login': typeof ApiAuthLoginRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
@@ -548,6 +570,7 @@ export interface FileRoutesByTo {
   '/api/auth/mfa-resend': typeof ApiAuthMfaResendRoute
   '/api/auth/profile': typeof ApiAuthProfileRoute
   '/api/auth/refresh': typeof ApiAuthRefreshRoute
+  '/api/auth/reset-password': typeof ApiAuthResetPasswordRoute
   '/api/auth/signup': typeof ApiAuthSignupRoute
   '/api/blockchain/status': typeof ApiBlockchainStatusRoute
   '/api/fraud/alerts': typeof ApiFraudAlertsRoute
@@ -570,6 +593,7 @@ export interface FileRoutesByTo {
   '/api/regulator/recalls': typeof ApiRegulatorRecallsRoute
   '/api/regulator/stats': typeof ApiRegulatorStatsRoute
   '/api/verify/history': typeof ApiVerifyHistoryRoute
+  '/api/report': typeof ApiReportIndexRoute
   '/api/verify': typeof ApiVerifyIndexRoute
   '/api/admin/pharmacy/blacklist': typeof ApiAdminPharmacyBlacklistRoute
   '/api/admin/recall/create': typeof ApiAdminRecallCreateRoute
@@ -612,6 +636,7 @@ export interface FileRoutesById {
   '/api/admin/dashboard': typeof ApiAdminDashboardRoute
   '/api/ai/insights': typeof ApiAiInsightsRoute
   '/api/auth/change-password': typeof ApiAuthChangePasswordRoute
+  '/api/auth/forgot-password': typeof ApiAuthForgotPasswordRoute
   '/api/auth/google': typeof ApiAuthGoogleRoute
   '/api/auth/login': typeof ApiAuthLoginRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
@@ -620,6 +645,7 @@ export interface FileRoutesById {
   '/api/auth/mfa-resend': typeof ApiAuthMfaResendRoute
   '/api/auth/profile': typeof ApiAuthProfileRoute
   '/api/auth/refresh': typeof ApiAuthRefreshRoute
+  '/api/auth/reset-password': typeof ApiAuthResetPasswordRoute
   '/api/auth/signup': typeof ApiAuthSignupRoute
   '/api/blockchain/status': typeof ApiBlockchainStatusRoute
   '/api/fraud/alerts': typeof ApiFraudAlertsRoute
@@ -642,6 +668,7 @@ export interface FileRoutesById {
   '/api/regulator/recalls': typeof ApiRegulatorRecallsRoute
   '/api/regulator/stats': typeof ApiRegulatorStatsRoute
   '/api/verify/history': typeof ApiVerifyHistoryRoute
+  '/api/report/': typeof ApiReportIndexRoute
   '/api/verify/': typeof ApiVerifyIndexRoute
   '/api/admin/pharmacy/blacklist': typeof ApiAdminPharmacyBlacklistRoute
   '/api/admin/recall/create': typeof ApiAdminRecallCreateRoute
@@ -685,6 +712,7 @@ export interface FileRouteTypes {
     | '/api/admin/dashboard'
     | '/api/ai/insights'
     | '/api/auth/change-password'
+    | '/api/auth/forgot-password'
     | '/api/auth/google'
     | '/api/auth/login'
     | '/api/auth/logout'
@@ -693,6 +721,7 @@ export interface FileRouteTypes {
     | '/api/auth/mfa-resend'
     | '/api/auth/profile'
     | '/api/auth/refresh'
+    | '/api/auth/reset-password'
     | '/api/auth/signup'
     | '/api/blockchain/status'
     | '/api/fraud/alerts'
@@ -715,6 +744,7 @@ export interface FileRouteTypes {
     | '/api/regulator/recalls'
     | '/api/regulator/stats'
     | '/api/verify/history'
+    | '/api/report/'
     | '/api/verify/'
     | '/api/admin/pharmacy/blacklist'
     | '/api/admin/recall/create'
@@ -756,6 +786,7 @@ export interface FileRouteTypes {
     | '/api/admin/dashboard'
     | '/api/ai/insights'
     | '/api/auth/change-password'
+    | '/api/auth/forgot-password'
     | '/api/auth/google'
     | '/api/auth/login'
     | '/api/auth/logout'
@@ -764,6 +795,7 @@ export interface FileRouteTypes {
     | '/api/auth/mfa-resend'
     | '/api/auth/profile'
     | '/api/auth/refresh'
+    | '/api/auth/reset-password'
     | '/api/auth/signup'
     | '/api/blockchain/status'
     | '/api/fraud/alerts'
@@ -786,6 +818,7 @@ export interface FileRouteTypes {
     | '/api/regulator/recalls'
     | '/api/regulator/stats'
     | '/api/verify/history'
+    | '/api/report'
     | '/api/verify'
     | '/api/admin/pharmacy/blacklist'
     | '/api/admin/recall/create'
@@ -827,6 +860,7 @@ export interface FileRouteTypes {
     | '/api/admin/dashboard'
     | '/api/ai/insights'
     | '/api/auth/change-password'
+    | '/api/auth/forgot-password'
     | '/api/auth/google'
     | '/api/auth/login'
     | '/api/auth/logout'
@@ -835,6 +869,7 @@ export interface FileRouteTypes {
     | '/api/auth/mfa-resend'
     | '/api/auth/profile'
     | '/api/auth/refresh'
+    | '/api/auth/reset-password'
     | '/api/auth/signup'
     | '/api/blockchain/status'
     | '/api/fraud/alerts'
@@ -857,6 +892,7 @@ export interface FileRouteTypes {
     | '/api/regulator/recalls'
     | '/api/regulator/stats'
     | '/api/verify/history'
+    | '/api/report/'
     | '/api/verify/'
     | '/api/admin/pharmacy/blacklist'
     | '/api/admin/recall/create'
@@ -894,6 +930,7 @@ export interface RootRouteChildren {
   ApiAdminDashboardRoute: typeof ApiAdminDashboardRoute
   ApiAiInsightsRoute: typeof ApiAiInsightsRoute
   ApiAuthChangePasswordRoute: typeof ApiAuthChangePasswordRoute
+  ApiAuthForgotPasswordRoute: typeof ApiAuthForgotPasswordRoute
   ApiAuthGoogleRoute: typeof ApiAuthGoogleRoute
   ApiAuthLoginRoute: typeof ApiAuthLoginRoute
   ApiAuthLogoutRoute: typeof ApiAuthLogoutRoute
@@ -902,6 +939,7 @@ export interface RootRouteChildren {
   ApiAuthMfaResendRoute: typeof ApiAuthMfaResendRoute
   ApiAuthProfileRoute: typeof ApiAuthProfileRoute
   ApiAuthRefreshRoute: typeof ApiAuthRefreshRoute
+  ApiAuthResetPasswordRoute: typeof ApiAuthResetPasswordRoute
   ApiAuthSignupRoute: typeof ApiAuthSignupRoute
   ApiBlockchainStatusRoute: typeof ApiBlockchainStatusRoute
   ApiFraudAlertsRoute: typeof ApiFraudAlertsRoute
@@ -923,6 +961,7 @@ export interface RootRouteChildren {
   ApiRegulatorRecallsRoute: typeof ApiRegulatorRecallsRoute
   ApiRegulatorStatsRoute: typeof ApiRegulatorStatsRoute
   ApiVerifyHistoryRoute: typeof ApiVerifyHistoryRoute
+  ApiReportIndexRoute: typeof ApiReportIndexRoute
   ApiVerifyIndexRoute: typeof ApiVerifyIndexRoute
   ApiAdminPharmacyBlacklistRoute: typeof ApiAdminPharmacyBlacklistRoute
   ApiAdminRecallCreateRoute: typeof ApiAdminRecallCreateRoute
@@ -1096,6 +1135,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiVerifyIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/report/': {
+      id: '/api/report/'
+      path: '/api/report'
+      fullPath: '/api/report/'
+      preLoaderRoute: typeof ApiReportIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/verify/history': {
       id: '/api/verify/history'
       path: '/api/verify/history'
@@ -1250,6 +1296,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSignupRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/auth/reset-password': {
+      id: '/api/auth/reset-password'
+      path: '/api/auth/reset-password'
+      fullPath: '/api/auth/reset-password'
+      preLoaderRoute: typeof ApiAuthResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/auth/refresh': {
       id: '/api/auth/refresh'
       path: '/api/auth/refresh'
@@ -1304,6 +1357,13 @@ declare module '@tanstack/react-router' {
       path: '/api/auth/google'
       fullPath: '/api/auth/google'
       preLoaderRoute: typeof ApiAuthGoogleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/forgot-password': {
+      id: '/api/auth/forgot-password'
+      path: '/api/auth/forgot-password'
+      fullPath: '/api/auth/forgot-password'
+      preLoaderRoute: typeof ApiAuthForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/auth/change-password': {
@@ -1521,6 +1581,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAdminDashboardRoute: ApiAdminDashboardRoute,
   ApiAiInsightsRoute: ApiAiInsightsRoute,
   ApiAuthChangePasswordRoute: ApiAuthChangePasswordRoute,
+  ApiAuthForgotPasswordRoute: ApiAuthForgotPasswordRoute,
   ApiAuthGoogleRoute: ApiAuthGoogleRoute,
   ApiAuthLoginRoute: ApiAuthLoginRoute,
   ApiAuthLogoutRoute: ApiAuthLogoutRoute,
@@ -1529,6 +1590,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAuthMfaResendRoute: ApiAuthMfaResendRoute,
   ApiAuthProfileRoute: ApiAuthProfileRoute,
   ApiAuthRefreshRoute: ApiAuthRefreshRoute,
+  ApiAuthResetPasswordRoute: ApiAuthResetPasswordRoute,
   ApiAuthSignupRoute: ApiAuthSignupRoute,
   ApiBlockchainStatusRoute: ApiBlockchainStatusRoute,
   ApiFraudAlertsRoute: ApiFraudAlertsRoute,
@@ -1550,6 +1612,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiRegulatorRecallsRoute: ApiRegulatorRecallsRoute,
   ApiRegulatorStatsRoute: ApiRegulatorStatsRoute,
   ApiVerifyHistoryRoute: ApiVerifyHistoryRoute,
+  ApiReportIndexRoute: ApiReportIndexRoute,
   ApiVerifyIndexRoute: ApiVerifyIndexRoute,
   ApiAdminPharmacyBlacklistRoute: ApiAdminPharmacyBlacklistRoute,
   ApiAdminRecallCreateRoute: ApiAdminRecallCreateRoute,

@@ -1,9 +1,9 @@
 import { createAPIFileRoute } from "@/lib/api-route-helper";
 import { BatchService } from "@/server/services/manufacturer/batch.service";
 import { authorizeRequest } from "@/server/middleware/auth.middleware";
+import { ApiResponse } from "@/server/utils/api-response";
 import { PDFSheetService } from "@/server/services/pdf/pdf-sheet.service";
 import { ZIPExportService } from "@/server/services/downloads/zip-export.service";
-import { ApiResponse } from "@/server/utils/api-response";
 import fs from "fs";
 import path from "path";
 
@@ -99,20 +99,11 @@ export const Route = createAPIFileRoute("/api/manufacturer/batch/$id")({
             }
 
             // ── Standard JSON Metadata ────────────────────────────────────
-            try {
-                const wantAllPills = url.searchParams.get("all") === "true";
-                const batch = await BatchService.getBatchDetails(payload.userId, id, { allPills: wantAllPills }) as any;
 
-                return Response.json(ApiResponse.success({
-                    ...batch,
-                    totalCartons: batch._count?.cartons ?? batch.cartons?.length ?? 0,
-                    totalBoxes: batch._count?.boxes ?? batch.boxes?.length ?? 0,
-                    totalPills: batch._count?.pills ?? batch.pills?.length ?? batch.totalPillsGenerated ?? 0,
-                }));
-            } catch (err: any) {
-                console.error("[API] Batch detail fetch error:", err);
-                return Response.json(ApiResponse.error(err.message || "Internal error", 500), { status: 500 });
-            }
+            const wantAllPills = url.searchParams.get("all") === "true";
+            const batch = await BatchService.getBatchDetails(payload.userId, id, { allPills: wantAllPills });
+
+            return Response.json(ApiResponse.success(batch));
         } catch (error: any) {
             const status = error.statusCode || 404;
             return Response.json(ApiResponse.error(error.message, status), { status });

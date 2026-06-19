@@ -37,33 +37,11 @@ export function DualQRCard({
     const textColor = isBox ? "text-primary" : "text-success";
     const borderColor = isBox ? "border-primary/30" : "border-success/30";
 
-    const handleCopy = async () => {
-        try {
-            if (navigator.clipboard && window.isSecureContext) {
-                await navigator.clipboard.writeText(qrValue);
-            } else {
-                // Fallback for non-secure contexts
-                const textArea = document.createElement("textarea");
-                textArea.value = qrValue;
-                textArea.style.position = "fixed";
-                textArea.style.left = "-999999px";
-                textArea.style.top = "-999999px";
-                document.body.appendChild(textArea);
-                textArea.focus();
-                textArea.select();
-                try {
-                    document.execCommand('copy');
-                } catch (err) {
-                    console.error('Fallback copy failed', err);
-                }
-                document.body.removeChild(textArea);
-            }
-            setCopied(true);
-            onCopy?.();
-            setTimeout(() => setCopied(false), 2000);
-        } catch (err) {
-            console.error('Copy failed', err);
-        }
+    const handleCopy = () => {
+        navigator.clipboard.writeText(qrValue);
+        setCopied(true);
+        onCopy?.();
+        setTimeout(() => setCopied(false), 2000);
     };
 
     const handleDownload = () => {
@@ -85,7 +63,7 @@ export function DualQRCard({
             <div className="absolute inset-0 holo pointer-events-none opacity-50" />
 
             {/* Content */}
-            <div className="relative z-10 p-4 space-y-3">
+            <div className="relative z-10 p-5 space-y-4">
                 {/* Header */}
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">

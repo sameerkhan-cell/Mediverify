@@ -64,6 +64,8 @@ model User {
   // MFA / Verification
   otpCode       String?
   otpExpiresAt  DateTime?
+  passwordResetToken   String?
+  passwordResetExpiry  DateTime?
 
   reports       Report[]
   verifications VerificationLog[]

@@ -62,7 +62,11 @@ function ResetPasswordPage() {
   const onSubmit = async (data: FormData) => {
     setServerError(null);
 
-    const resetToken = token ?? "demo-reset-token-12345";
+    if (!token) {
+      setServerError("Invalid reset link. Please request a new password reset.");
+      return;
+    }
+    const resetToken = token;
     const res = await authService.resetPassword({
       token: resetToken,
       password: data.password,
@@ -139,16 +143,6 @@ function ResetPasswordPage() {
             className="space-y-5"
             noValidate
           >
-            {/* Invalid token warning */}
-            {!token && (
-              <div className="flex items-start gap-2.5 rounded-xl border border-warning/25 bg-warning/6 px-4 py-3">
-                <AlertCircle className="h-4 w-4 mt-0.5 shrink-0 text-warning" />
-                <p className="text-[12px] text-warning">
-                  No reset token found. This is a demo — any token will work.
-                </p>
-              </div>
-            )}
-
             {/* Server error */}
             <AnimatePresence>
               {serverError && (
