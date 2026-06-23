@@ -183,7 +183,12 @@ export class AuthService {
         }
 
         // 3. Remove old session
-        await prisma.session.delete({ where: { id: session.id } });
+        try {
+            await prisma.session.delete({ where: { id: session.id } });
+        } catch (err: any) {
+            // P2025 = "Record to delete does not exist" - happens if concurrent request already removed it.
+            if (err.code !== "P2025") throw err;
+        }
 
         // 4. Generate new pair
         return this.generateAuthResponse(session.user);

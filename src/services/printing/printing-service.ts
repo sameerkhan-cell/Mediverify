@@ -30,6 +30,44 @@ export class PrintingService {
     }
 
     /**
+     * Generates a PDF with multiple stickers/labels for ALL cartons.
+     * Layout: 6cm x 6cm per carton.
+     */
+    static async generateCartonQrPdf(batch: MedicineBatch): Promise<Blob> {
+        const doc = new jsPDF({
+            unit: "mm",
+            format: "a4",
+        });
+
+        const LABEL_SIZE = 60; // 6cm
+        const MARGIN = 10;
+        const GAP = 5;
+        const perRow = Math.floor((210 - MARGIN * 2) / (LABEL_SIZE + GAP));
+        const perCol = Math.floor((297 - MARGIN * 2) / (LABEL_SIZE + GAP));
+
+        const cartons = batch.cartons || [];
+
+        for (let i = 0; i < cartons.length; i++) {
+            if (i > 0 && i % (perRow * perCol) === 0) doc.addPage();
+
+            const pageIndex = i % (perRow * perCol);
+            const col = pageIndex % perRow;
+            const row = Math.floor(pageIndex / perRow);
+
+            const x = MARGIN + col * (LABEL_SIZE + GAP);
+            const y = MARGIN + row * (LABEL_SIZE + GAP);
+
+            const qrDataUrl = await QRCode.toDataURL(cartons[i].qrCode, { margin: 1, width: 200 });
+            doc.addImage(qrDataUrl, "PNG", x + 5, y + 5, 50, 50);
+
+            doc.setFontSize(8);
+            doc.text(`CARTON: ${cartons[i].cartonNumber}`, x + 30, y + 57, { align: "center" });
+        }
+
+        return doc.output("blob");
+    }
+
+    /**
      * Generates a PDF for a sheet of Pill QRs.
      * Layout: Micro QR layout (0.8cm x 0.8cm) on A4.
      */

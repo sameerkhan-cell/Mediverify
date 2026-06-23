@@ -92,6 +92,7 @@ export function useBatchGeneration(): UseBatchGenerationReturn {
                     expiryDate: form.expiryDate ? new Date(form.expiryDate).toISOString() : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
                     quantityBoxes: form.quantityBoxes,
                     pillsPerBox: form.totalPillsPerBox,
+                    totalCartons: form.totalCartons,
                     category: form.productCategory,
                     allowsExtension: form.isExtension,
                 })
@@ -128,7 +129,7 @@ export function useBatchGeneration(): UseBatchGenerationReturn {
                 ...generated,
                 batch: {
                     ...generated.batch,
-                    id: serverBatch.id,
+                    ...serverBatch, // Overwrite with server-enriched data (IDs, txHash, cartons, boxes, etc.)
                     txHash: serverBatch.txHash || "PENDING_ANCHOR",
                 }
             };

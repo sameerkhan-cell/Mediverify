@@ -500,44 +500,74 @@ function QRLibraryPage() {
     const [search, setSearch] = useState("");
     const [statusFilter, setStatusFilter] = useState<"All" | "Active" | "Recalled" | "Expired">("All");
     const [selectedBatch, setSelectedBatch] = useState<MedicineBatch | null>(null);
+    const [isLoadingBatches, setIsLoadingBatches] = useState(false);
+    const [fetchError, setFetchError] = useState<string | null>(null);
 
     useEffect(() => {
-        if (isAuthenticated && user?.role === "manufacturer") {
-            fetch("/api/manufacturer/batches", {
-                headers: {
-                    "Authorization": `Bearer ${(() => {
-                        try {
-                            const session = localStorage.getItem("mediverify_session") || sessionStorage.getItem("mediverify_session");
-                            return session ? JSON.parse(session).token : "";
-                        } catch { return ""; }
-                    })()}`
+        const loadBatches = async () => {
+            if (!isAuthenticated || user?.role !== "manufacturer") return;
+
+            setIsLoadingBatches(true);
+            setFetchError(null);
+
+            try {
+                const raw =
+                    typeof window !== "undefined"
+                        ? localStorage.getItem("mediverify_session")
+                        : null;
+                const token = raw ? (() => { try { return JSON.parse(raw)?.token; } catch { return null; } })() : null;
+
+                const res = await fetch("/api/manufacturer/batches", {
+                    headers: token ? { Authorization: `Bearer ${token}` } : {},
+                });
+
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    setFetchError(err.message || "Failed to load batches.");
+                    return;
                 }
-            })
-                .then(res => res.json())
-                .then(res => {
-                    if (res.success) {
-                        setBatches(res.data.map((b: any) => ({
-                            id: b.id,
-                            batchNumber: b.batchNumber,
-                            medicineName: b.medicine.name,
-                            quantityBoxes: b.quantityBoxes ?? 0,
-                            totalPills: b.totalPillsGenerated ?? 0,
-                            totalPillsPerBox: b.pillsPerBox ?? 0,
-                            manufacturingDate: b.manufacturingDate,
-                            expiryDate: b.expiryDate,
-                            status: b.medicineStatus === "MANUFACTURED" ? "Active" : b.medicineStatus === "RECALLED" ? "Recalled" : b.medicineStatus === "EXPIRED" ? "Expired" : b.status === "ACTIVE" ? "Active" : b.status === "RECALLED" ? "Recalled" : b.status === "EXPIRED" ? "Expired" : "Active",
-                            productCategory: b.category,
-                            manufacturerCode: b.medicine.manufacturer?.companyName?.substring(0, 3)?.toUpperCase() || "MFG",
-                            drapLicense: b.medicine.manufacturer?.licenseNumber || "DRAP-LIC-001",
-                            txHash: b.txHash || "0x" + "0".repeat(40),
-                            createdAt: b.createdAt,
-                            qrGenerationStatus: b.blockchainStatus?.toLowerCase() || "completed",
-                            boxQrCode: b.boxQRCode || `BOX-${b.batchNumber}-MFG`
-                        })));
-                    }
-                })
-                .catch(err => console.error("Failed to sync batches:", err));
-        }
+
+                const data = await res.json();
+                const fetchedBatches: any[] = data?.data?.batches ?? data?.data ?? [];
+
+                if (Array.isArray(fetchedBatches) && fetchedBatches.length > 0) {
+                    // Map API batches to the store shape
+                    const newBatches = fetchedBatches.map((b: any) => ({
+                        id: b.id,
+                        batchNumber: b.batchNumber,
+                        medicineName: b.medicine?.name ?? "Unknown",
+                        status: b.medicineStatus === "MANUFACTURED" ? "Active" :
+                            b.medicineStatus === "RECALLED" ? "Recalled" :
+                                b.medicineStatus === "EXPIRED" ? "Expired" :
+                                    b.status === "ACTIVE" ? "Active" :
+                                        b.status === "RECALLED" ? "Recalled" :
+                                            b.status === "EXPIRED" ? "Expired" : "Active",
+                        createdAt: b.createdAt,
+                        quantityBoxes: b.quantityBoxes ?? 0,
+                        totalPills: b.totalPillsGenerated ?? 0,
+                        totalPillsPerBox: b.pillsPerBox ?? 0,
+                        manufacturingDate: b.manufacturingDate,
+                        expiryDate: b.expiryDate,
+                        productCategory: b.category || "Pharmaceutical",
+                        manufacturerCode: b.medicine?.manufacturer?.companyName?.substring(0, 3)?.toUpperCase() || "MFG",
+                        drapLicense: b.medicine?.manufacturer?.licenseNumber || "DRAP-LIC-001",
+                        txHash: b.txHash || "0x" + "0".repeat(40),
+                        qrGenerationStatus: b.blockchainStatus?.toLowerCase() || "completed",
+                        boxQrCode: b.boxQRCode || `BOX-${b.batchNumber}-MFG`
+                    }));
+
+                    // To merge without duplicates, we filter out batches that already exist in the store by ID
+                    setBatches([...batches, ...newBatches.filter(nb => !batches.some(eb => eb.id === nb.id))]);
+                }
+            } catch (err) {
+                console.error("Fetch error:", err);
+                setFetchError("Network error. Could not load batches.");
+            } finally {
+                setIsLoadingBatches(false);
+            }
+        };
+
+        loadBatches();
     }, [isAuthenticated, user?.role, setBatches]);
 
     if (isLoading) {
@@ -625,6 +655,19 @@ function QRLibraryPage() {
                     ))}
                 </div>
             </div>
+
+            {isLoadingBatches && (
+                <div className="flex items-center justify-center py-8 text-muted-foreground gap-2">
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    <span className="text-sm">Loading batches…</span>
+                </div>
+            )}
+
+            {fetchError && !isLoadingBatches && (
+                <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive mb-6">
+                    ⚠ {fetchError}
+                </div>
+            )}
 
             {/* ── Grid ── */}
             {filtered.length === 0 ? (

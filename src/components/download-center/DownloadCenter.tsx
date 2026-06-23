@@ -20,7 +20,7 @@ interface Props {
     boxQrCanvasRef: React.RefObject<HTMLDivElement | null>;
 }
 
-type DlKey = "box-png" | "box-svg" | "box-pdf" | "pill-sheet" | "pill-zip-bulk" | "batch-report-pdf";
+type DlKey = "carton-pdf" | "carton-zip" | "box-pdf" | "box-zip" | "pill-sheet" | "pill-zip-bulk" | "batch-report-pdf";
 type DlStatus = "idle" | "loading" | "done";
 
 interface DownloadItem {
@@ -34,12 +34,36 @@ interface DownloadItem {
 
 const DOWNLOADS: DownloadItem[] = [
     {
+        key: "carton-pdf",
+        label: "Carton Label — A4 PDF",
+        description: "Official 6cm × 6cm carton label",
+        icon: Printer,
+        accentClass: "text-amber-500 bg-amber-500/10",
+        badgeText: "Print",
+    },
+    {
+        key: "carton-zip",
+        label: "Carton QR — ZIP",
+        description: "All carton QR codes as PNG",
+        icon: Archive,
+        accentClass: "text-amber-500 bg-amber-500/10",
+        badgeText: "Bulk",
+    },
+    {
         key: "box-pdf",
         label: "Box Label — A4 PDF",
         description: "Official 3cm × 3cm print layout",
         icon: Printer,
         accentClass: "text-primary bg-primary/10",
         badgeText: "Print",
+    },
+    {
+        key: "box-zip",
+        label: "Box QR — ZIP",
+        description: "All box QR codes as PNG",
+        icon: Archive,
+        accentClass: "text-primary bg-primary/10",
+        badgeText: "Bulk",
     },
     {
         key: "pill-sheet",
@@ -65,36 +89,53 @@ const DOWNLOADS: DownloadItem[] = [
         accentClass: "text-primary bg-primary/10",
         badgeText: "Legal",
     },
-    {
-        key: "box-png",
-        label: "Box QR — PNG",
-        description: "High-resolution transparent asset",
-        icon: ImageIcon,
-        accentClass: "text-muted-foreground bg-secondary/40",
-        badgeText: "Asset",
-    },
 ];
 
 export function DownloadCenter({ result, boxQrCanvasRef }: Props) {
+    const { batch, pills } = result;
     const [statuses, setStatuses] = useState<Partial<Record<DlKey, DlStatus>>>({});
 
     const setStatus = (key: DlKey, status: DlStatus) =>
         setStatuses((prev) => ({ ...prev, [key]: status }));
 
     const handleAction = async (key: DlKey) => {
-        const { batch, pills } = result;
         const batchId = batch.batchNumber;
 
         setStatus(key, "loading");
 
         try {
             switch (key) {
+                case "carton-pdf": {
+                    const blob = await PrintingService.generateCartonQrPdf(batch);
+                    saveAs(blob, `MediVerify_CartonLabels_${batchId}.pdf`);
+                    break;
+                }
+                case "carton-zip": {
+                    const sessionStr = localStorage.getItem("mediverify_session") || sessionStorage.getItem("mediverify_session");
+                    const token = sessionStr ? JSON.parse(sessionStr).token : "";
+                    const res = await fetch(`/api/manufacturer/batch/${batch.id}?download=zip&type=carton`, {
+                        headers: { "Authorization": `Bearer ${token}` }
+                    });
+                    const blob = await res.blob();
+                    saveAs(blob, `MediVerify_CartonAssets_${batchId}.zip`);
+                    break;
+                }
                 case "box-pdf": {
                     const canvas = boxQrCanvasRef.current?.querySelector("canvas");
                     if (!canvas) throw new Error("Canvas not ready");
                     const dataUrl = canvas.toDataURL("image/png");
                     const blob = await PrintingService.generateBoxQrPdf(batch, dataUrl);
-                    saveAs(blob, `MediVerify_Label_${batchId}.pdf`);
+                    saveAs(blob, `MediVerify_BoxLabel_${batchId}.pdf`);
+                    break;
+                }
+                case "box-zip": {
+                    const sessionStr = localStorage.getItem("mediverify_session") || sessionStorage.getItem("mediverify_session");
+                    const token = sessionStr ? JSON.parse(sessionStr).token : "";
+                    const res = await fetch(`/api/manufacturer/batch/${batch.id}?download=zip&type=box`, {
+                        headers: { "Authorization": `Bearer ${token}` }
+                    });
+                    const blob = await res.blob();
+                    saveAs(blob, `MediVerify_BoxAssets_${batchId}.zip`);
                     break;
                 }
                 case "pill-sheet": {
@@ -133,16 +174,6 @@ export function DownloadCenter({ result, boxQrCanvasRef }: Props) {
                     saveAs(blob, `MediVerify_BatchReport_${batchId}.pdf`);
                     break;
                 }
-                case "box-png": {
-                    const canvas = boxQrCanvasRef.current?.querySelector("canvas");
-                    if (!canvas) {
-                        console.error("Box QR canvas not found in DOM");
-                        break;
-                    }
-                    const dataUrl = exportQRCanvasToPng(canvas, batch.boxQrCode, `MediVerify · ${batch.medicineName}`);
-                    triggerDownload(dataUrl, `MediVerify-BoxQR-${batchId}.png`);
-                    break;
-                }
             }
 
             setStatus(key, "done");
@@ -169,7 +200,7 @@ export function DownloadCenter({ result, boxQrCanvasRef }: Props) {
                 <div className="flex items-center gap-2 rounded-full bg-secondary/50 border border-border/40 px-3 py-1.5">
                     <Package className="h-3 w-3 text-primary" />
                     <span className="text-[11px] font-semibold tabular-nums">
-                        1 Box + <span className="text-success">{result.totalPillsGenerated.toLocaleString()}</span> Pills
+                        {batch.cartons?.length || 1} Carton + {batch.quantityBoxes} Boxes + <span className="text-success">{result.totalPillsGenerated.toLocaleString()}</span> Pills
                     </span>
                 </div>
             </div>
@@ -221,8 +252,8 @@ export function DownloadCenter({ result, boxQrCanvasRef }: Props) {
                                         </motion.div>
                                     ) : (
                                         <motion.div key="idle" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-2">
-                                            {(item.key === 'box-pdf' || item.key === 'pill-sheet') ? <Printer className="h-3.5 w-3.5" /> : <Download className="h-3.5 w-3.5" />}
-                                            {item.key === 'box-pdf' || item.key === 'pill-sheet' ? 'Print' : 'Get'}
+                                            {(item.key === 'carton-pdf' || item.key === 'box-pdf' || item.key === 'pill-sheet') ? <Printer className="h-3.5 w-3.5" /> : <Download className="h-3.5 w-3.5" />}
+                                            {(item.key === 'carton-pdf' || item.key === 'box-pdf' || item.key === 'pill-sheet') ? 'Print' : 'Get'}
                                         </motion.div>
                                     )}
                                 </AnimatePresence>

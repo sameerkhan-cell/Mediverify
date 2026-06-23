@@ -203,12 +203,58 @@ model Medicine {
   description    String?   @db.Text
   manufacturerId String
   manufacturer   Manufacturer @relation(fields: [manufacturerId], references: [id])
+  
+  // DRAP Admin Fields
+  drapRegNumber     String?   // DRAP registration number e.g. "DRAP-MED-2024-0001"
+  activeIngredients String?   @db.Text  // e.g. "Paracetamol 500mg"
+  approvalDate      DateTime? // when DRAP approved this medicine
+  approvalStatus    String    @default("REGISTERED") // REGISTERED | SUSPENDED | BANNED
+  manufacturer_name String?   // for medicines NOT in our manufacturer system (Layer 1 - any Pakistan medicine)
+  isPublicDRAPEntry Boolean   @default(false) // true = entered by admin from DRAP data, false = registered manufacturer
+
   batches        Batch[]
+  batchSequences BatchSequence[]
   createdAt      DateTime  @default(now())
 
   @@index([manufacturerId])
   @@map("medicine")
 }
+
+model BatchSequence {
+  id              String   @id @default(cuid())
+  medicineId      String
+  medicine        Medicine @relation(fields: [medicineId], references: [id], onDelete: Cascade)
+  prefix          String   // e.g. "PND", "AUG", "BRF"
+  year            Int      // e.g. 2024
+  minSequence     Int      // e.g. 1
+  maxSequence     Int      // e.g. 523 (highest known valid batch number for this year)
+  totalBatches    Int      // how many batches confirmed for this year
+  confidence      String   @default("MEDIUM") // HIGH | MEDIUM | LOW
+  lastUpdated     DateTime @default(now())
+  createdAt       DateTime @default(now())
+  
+  @@unique([medicineId, prefix, year])
+  @@index([prefix, year])
+  @@map("batch_sequence")
+}
+
+model DRAPRecall {
+  id           String   @id @default(cuid())
+  medicineName String
+  batchNumber  String?
+  recallDate   DateTime
+  reason       String   @db.Text
+  severity     String   @default("MEDIUM") // LOW | MEDIUM | HIGH | CRITICAL
+  isActive     Boolean  @default(true)
+  drapRef      String?  // DRAP official recall reference number
+  createdBy    String?  // admin userId who entered this
+  createdAt    DateTime @default(now())
+  
+  @@index([medicineName])
+  @@index([batchNumber])
+  @@map("drap_recall")
+}
+
 
 model Batch {
   id                  String     @id @default(cuid())

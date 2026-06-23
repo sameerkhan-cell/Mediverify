@@ -23,6 +23,7 @@ const RegisterBatchSchema = z.object({
     expiryDate: z.string().min(1, "Expiry date is required"),
     quantityBoxes: z.coerce.number().int().min(1, "Quantity must be at least 1"),
     pillsPerBox: z.coerce.number().int().min(1, "Pills per box must be at least 1"),
+    totalCartons: z.coerce.number().int().min(1).optional(),
     dosageStrength: z.string().optional(),
     productType: z.string().optional(),
     allowsExtension: z.boolean().optional().default(false),

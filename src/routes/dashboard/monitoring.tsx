@@ -31,6 +31,72 @@ function IntelligencePage() {
   const { alerts, globalScores } = useFraudStore();
   const { stats } = useQRStore();
 
+  const [fraudAlerts, setFraudAlerts] = useState<any[]>([]);
+  const [fraudMetrics, setFraudMetrics] = useState<any>(null);
+  const [isLoadingData, setIsLoadingData] = useState(false);
+  const [dataError, setDataError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchMonitoringData = async () => {
+      setIsLoadingData(true);
+      setDataError(null);
+
+      try {
+        const raw =
+          typeof window !== "undefined"
+            ? localStorage.getItem("mediverify_session")
+            : null;
+        const token = raw
+          ? (() => {
+            try {
+              return JSON.parse(raw)?.token;
+            } catch {
+              return null;
+            }
+          })()
+          : null;
+
+        const headers: Record<string, string> = {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        };
+
+        const [alertsRes, metricsRes] = await Promise.all([
+          fetch("/api/fraud/alerts", { headers }),
+          fetch("/api/fraud/metrics", { headers }),
+        ]);
+
+        if (alertsRes.ok) {
+          const alertsData = await alertsRes.json();
+          const alertsList = alertsData?.data?.alerts ?? alertsData?.data ?? [];
+          if (Array.isArray(alertsList)) setFraudAlerts(alertsList);
+        }
+
+        if (metricsRes.ok) {
+          const metricsData = await metricsRes.json();
+          setFraudMetrics(metricsData?.data ?? null);
+        }
+
+        if (!alertsRes.ok && !metricsRes.ok) {
+          setDataError("Could not load monitoring data. Please refresh.");
+        }
+      } catch (err) {
+        console.error("Monitoring fetch error:", err);
+        setDataError("Network error. Could not load monitoring data.");
+      } finally {
+        setIsLoadingData(false);
+      }
+    };
+
+    fetchMonitoringData();
+  }, []);
+
+  const displayAlerts = fraudAlerts.length > 0 ? fraudAlerts : (alerts ?? []);
+  const totalAlerts = fraudMetrics?.totalAlerts ?? fraudMetrics?.alertCount ?? displayAlerts.length;
+  const riskScore = fraudMetrics?.averageRiskScore ?? fraudMetrics?.riskScore ?? globalScores.batchSafety;
+  const liveScans = fraudMetrics?.totalScans ?? fraudMetrics?.scanCount ?? stats.totalScanned();
+  const liveFlagged = fraudMetrics?.flaggedCount ?? fraudMetrics?.suspiciousCount ?? stats.suspiciousCount();
+
   useEffect(() => {
     if (isAuthenticated && user?.role !== "manufacturer" && user?.role !== "pharmacy") {
       signOut();
@@ -57,6 +123,19 @@ function IntelligencePage() {
     >
       <div className="relative overflow-hidden">
         <div className="relative z-10 space-y-8">
+          {isLoadingData && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Syncing live monitoring data…</span>
+            </div>
+          )}
+
+          {dataError && !isLoadingData && (
+            <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive mb-4">
+              ⚠ {dataError}
+            </div>
+          )}
+
           {/* Main Monitoring Grid */}
           <div className="grid gap-6 lg:grid-cols-4 lg:grid-rows-2 h-full lg:h-[calc(100vh-220px)]">
 
@@ -88,7 +167,7 @@ function IntelligencePage() {
                 <div className="h-1.5 w-1.5 rounded-full bg-primary animate-ping" />
               </div>
               <div className="flex-1 overflow-y-auto space-y-1 p-2">
-                {alerts.length > 0 ? alerts.map((alert, i) => (
+                {displayAlerts.length > 0 ? displayAlerts.map((alert, i) => (
                   <ActivityItem key={alert.id} alert={alert} />
                 )) : [...Array(8)].map((_, i) => (
                   <ActivityItemStub key={i} index={i} />
@@ -102,11 +181,11 @@ function IntelligencePage() {
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <p className="text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground">System Trust Score</p>
-                  <ShieldCheck className={`h-5 w-5 ${globalScores.batchSafety > 70 ? 'text-success' : 'text-warning'}`} />
+                  <ShieldCheck className={`h-5 w-5 ${riskScore > 70 ? 'text-success' : 'text-warning'}`} />
                 </div>
-                <h4 className={`text-4xl font-black ${globalScores.batchSafety > 70 ? 'text-success' : 'text-warning'} tracking-tighter mb-2 italic`}>{globalScores.batchSafety}%</h4>
+                <h4 className={`text-4xl font-black ${riskScore > 70 ? 'text-success' : 'text-warning'} tracking-tighter mb-2 italic`}>{riskScore}%</h4>
                 <p className="text-[12px] text-muted-foreground leading-relaxed">
-                  {globalScores.batchSafety > 70
+                  {riskScore > 70
                     ? "Global supply chain integrity remains within optimal safety thresholds."
                     : "Elevated suspicious activity detected. Increased surveillance recommended."}
                 </p>
@@ -133,7 +212,7 @@ function IntelligencePage() {
                 <Zap className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <h1 className="text-5xl font-black tabular-nums tracking-tighter italic">{stats.totalScanned() || "48,291"}</h1>
+                <h1 className="text-5xl font-black tabular-nums tracking-tighter italic">{liveScans || "48,291"}</h1>
                 <p className="text-[12px] text-primary font-bold mt-1 flex items-center gap-1">
                   <ArrowUpRight className="h-3 w-3" /> +14.2% activity spike
                 </p>
@@ -141,11 +220,11 @@ function IntelligencePage() {
               <div className="grid grid-cols-2 gap-4 mt-6">
                 <div>
                   <p className="text-[9px] font-black uppercase opacity-50">Verified</p>
-                  <p className="text-[14px] font-bold text-success">{stats.totalScanned()}</p>
+                  <p className="text-[14px] font-bold text-success">{liveScans}</p>
                 </div>
                 <div>
                   <p className="text-[9px] font-black uppercase opacity-50">Flagged</p>
-                  <p className="text-[14px] font-bold text-destructive">{stats.suspiciousCount() || 42}</p>
+                  <p className="text-[14px] font-bold text-destructive">{liveFlagged || 42}</p>
                 </div>
               </div>
             </div>

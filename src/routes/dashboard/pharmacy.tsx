@@ -2,8 +2,10 @@ import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Stethoscope, PackageCheck, AlertTriangle, Star, ScanLine, ShieldCheck, XCircle, Clock, ArrowRight, TrendingUp,
-  CheckCircle2, Package, RefreshCw, Filter, Activity, UploadCloud, Truck, BrainCircuit, Map, ShieldAlert, FileText, Lock, Users
+  CheckCircle2, Package, RefreshCw, Filter, Activity, UploadCloud, Truck, BrainCircuit, Map, ShieldAlert, FileText, Lock, Users,
+  X, Camera, Loader2, ChevronDown, ShoppingBag, Factory, Archive, Circle, Phone, CheckCircle
 } from "lucide-react";
+import { BrowserMultiFormatReader } from "@zxing/library";
 import { useAuth } from "@/lib/auth-context";
 import { DASH_NAV } from "@/config/nav";
 import { ease } from "@/lib/motion";
@@ -14,7 +16,7 @@ import {
   AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip,
   BarChart, Bar, CartesianGrid,
 } from "recharts";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 export const Route = createFileRoute("/dashboard/pharmacy")({
   head: () => ({
@@ -83,9 +85,228 @@ const RESULT_STYLE = {
 // MAIN PAGE COMPONENT
 // ──────────────────────────────────────────────────────────────────────────
 
+function LiveScanner({ mode, onResult, onClose }: { mode: "qr" | "barcode"; onResult: (code: string) => void; onClose: () => void }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const reader = new BrowserMultiFormatReader();
+    reader.decodeFromVideoDevice(null, videoRef.current, (result: any) => {
+      if (result) {
+        const text = result.getText();
+        reader.reset();
+        onResult(text);
+      }
+    }).catch(() => setError("Camera access denied. Please allow camera permissions."));
+    return () => reader.reset();
+  }, []);
+
+  return (
+    <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/85 backdrop-blur-sm">
+      <div className="relative w-full max-w-sm mx-4 aspect-square overflow-hidden bg-black rounded-3xl border-2 border-primary/30">
+        <video ref={videoRef} className="absolute inset-0 w-full h-full object-cover" />
+        <div className="absolute inset-0 m-12 border-2 border-primary/50 rounded-2xl pointer-events-none">
+          <div className="absolute inset-x-0 top-1/2 h-0.5 bg-primary/50 shadow-[0_0_10px_2px_rgba(var(--primary-rgb),0.5)] animate-scan-y" />
+        </div>
+      </div>
+      <p className="text-white text-center font-bold text-sm mt-8 px-6">Point camera at the Carton, Box, or Batch QR code</p>
+      {error && <p className="text-destructive font-bold text-sm mt-4">{error}</p>}
+      <Button onClick={onClose} className="mt-8 rounded-xl px-12" variant="secondary">Cancel</Button>
+    </div>
+  );
+}
+
+function PharmacyDetailRow({ icon, label, value, bold, mono }: { icon?: React.ReactNode; label: string; value: string; bold?: boolean; mono?: boolean }) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <div className="flex items-center gap-1.5 text-muted-foreground">
+        {icon}
+        <span className="text-[11px] flex-shrink-0">{label}</span>
+      </div>
+      <span className={`text-[11px] text-right ${bold ? "font-semibold" : ""} ${mono ? "font-mono" : ""}`}>{value}</span>
+    </div>
+  );
+}
+
+function PharmacyScanModal({ onClose, session, user }: { onClose: () => void; session: any; user: any }) {
+  const [input, setInput] = useState("");
+  const [result, setResult] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleVerify = async (code?: string) => {
+    const verifyCode = (code ?? input).trim();
+    if (!verifyCode) return;
+    setLoading(true);
+    setError(null);
+    setResult(null);
+    try {
+      const res = await fetch("/api/verify", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session?.token ?? ""}`
+        },
+        body: JSON.stringify({
+          code: verifyCode,
+          userId: user?.id,
+          location: "Pharmacy Scanner",
+          deviceInfo: "Pharmacy Dashboard"
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setResult(data.data);
+      } else {
+        setError(data.message || "Verification failed");
+      }
+    } catch (err: any) {
+      setError("Verification failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getResultConfig = () => {
+    if (!result) return null;
+    const isGenuine = result.resultType === "GENUINE";
+    const isFake = result.resultType === "FAKE";
+    const isDuplicate = result.resultType === "DUPLICATE";
+    return {
+      icon: isGenuine ? <CheckCircle className="text-green-500" /> : isFake ? <XCircle className="text-red-500" /> : <AlertTriangle className="text-orange-500" />,
+      label: isGenuine ? "GENUINE" : isFake ? "FAKE DETECTED" : isDuplicate ? "ALREADY SCANNED" : result.resultType ?? "UNKNOWN",
+      color: isGenuine ? "green" : isFake ? "red" : isDuplicate ? "orange" : "yellow"
+    };
+  };
+  const config = getResultConfig();
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      <div className="bg-card border border-border rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
+        <div className="flex items-center justify-between p-5 border-b border-border/50">
+          <div>
+            <h2 className="font-semibold text-base">Scan Incoming Stock</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">Scan Carton QR → Box QR → verify stock</p>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 rounded-lg bg-secondary/50 flex items-center justify-center hover:bg-secondary transition-colors">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="px-5 pt-4">
+          <div className="grid grid-cols-3 gap-2 mb-4">
+            {[
+              { label: "Carton QR", color: "blue", desc: "Outer carton" },
+              { label: "Box QR", color: "green", desc: "Individual box" },
+              { label: "Batch No.", color: "purple", desc: "Manual entry" }
+            ].map(item => (
+              <div key={item.label} className={`rounded-lg border border-${item.color}-500/20 bg-${item.color}-500/5 p-2 text-center`}>
+                <p className={`text-[10px] font-semibold text-${item.color}-500`}>{item.label}</p>
+                <p className="text-[9px] text-muted-foreground mt-0.5">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="px-5 pb-5 space-y-3">
+          <div className="flex gap-2">
+            <input
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && handleVerify()}
+              placeholder="Scan QR or type code..."
+              className="flex-1 h-11 rounded-xl border border-border bg-secondary/20 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+              autoFocus
+            />
+            <button onClick={() => setShowCamera(true)} className="h-11 w-11 rounded-xl border border-border bg-secondary/20 flex items-center justify-center hover:bg-secondary transition-colors flex-shrink-0">
+              <Camera className="h-4 w-4" />
+            </button>
+          </div>
+          <button
+            onClick={() => handleVerify()}
+            disabled={loading || !input.trim()}
+            className="w-full h-11 rounded-xl bg-primary text-primary-foreground text-sm font-medium disabled:opacity-50 flex items-center justify-center gap-2 transition-transform active:scale-95"
+          >
+            {loading ? (<><Loader2 className="h-4 w-4 animate-spin" /> Verifying...</>) : (<><ScanLine className="h-4 w-4" /> Verify Stock</>)}
+          </button>
+          {error && <p className="text-red-500 text-[11px] font-medium text-center">{error}</p>}
+        </div>
+
+        {result && config && (
+          <div className="mx-5 mb-5 rounded-xl border border-border/50 overflow-hidden bg-secondary/5 animate-in fade-in slide-in-from-bottom-4 duration-300">
+            <div className={`p-4 bg-${config.color}-500/10 border-b border-${config.color}-500/20`}>
+              <div className="flex items-center gap-3">
+                <div className={`h-10 w-10 rounded-full bg-${config.color}-500/20 flex items-center justify-center`}>
+                  {config.icon}
+                </div>
+                <div className="min-w-0">
+                  <p className={`font-bold text-sm text-${config.color}-600`}>{config.label}</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{result.message}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 space-y-2.5">
+              {result.medicine && (
+                <>
+                  <PharmacyDetailRow label="Medicine" value={result.medicine.name} bold />
+                  <PharmacyDetailRow label="Manufacturer" value={result.manufacturer?.companyName ?? "N/A"} />
+                </>
+              )}
+              {result.batch && (
+                <>
+                  <PharmacyDetailRow label="Batch Number" value={result.batch.batchNumber} mono />
+                  <PharmacyDetailRow label="Expiry Date" value={result.batch.expiryDate ? new Date(result.batch.expiryDate).toLocaleDateString() : "N/A"} />
+                </>
+              )}
+              {result.cartonInfo && (
+                <div className="pt-2 mt-2 border-t border-border/30">
+                  <PharmacyDetailRow label="Carton ID" value={result.cartonInfo.cartonNumber} mono />
+                  <PharmacyDetailRow label="Unit Count" value={`${result.cartonInfo.boxesCount} Boxes`} />
+                </div>
+              )}
+              {result.supplyChain && (
+                <div className="pt-2 mt-2 border-t border-border/30">
+                  <PharmacyDetailRow label="Audit Trace" value={result.supplyChain.verifiedBy} />
+                  <PharmacyDetailRow icon={<Archive className="h-3 w-3" />} label="Box Serial" value={result.supplyChain.boxNumber} />
+                </div>
+              )}
+            </div>
+
+            <div className="p-3 border-t border-border/30 bg-secondary/10 flex gap-2">
+              <button
+                onClick={() => { setResult(null); setInput(""); }}
+                className="flex-1 h-9 rounded-lg bg-background border border-border text-[11px] font-bold hover:bg-secondary transition-colors"
+              >
+                Scan Next
+              </button>
+              <button
+                onClick={onClose}
+                className="px-4 h-9 rounded-lg bg-background border border-border text-[11px] font-bold hover:bg-secondary transition-colors text-muted-foreground"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {showCamera && (
+        <LiveScanner
+          mode="qr"
+          onResult={(code) => { setShowCamera(false); setInput(code); handleVerify(code); }}
+          onClose={() => setShowCamera(false)}
+        />
+      )}
+    </div>
+  );
+}
+
 function Page() {
-  const { user, isAuthenticated, signOut, isLoading } = useAuth();
+  const { user, session, isAuthenticated, signOut, isLoading } = useAuth();
   const [liveLog, setLiveLog] = useState(VERIF_LOGS);
+  const [showScanModal, setShowScanModal] = useState(false);
 
   useEffect(() => {
     if (isAuthenticated && user?.role !== "pharmacy") {
@@ -105,17 +326,24 @@ function Page() {
   if (user?.role !== "pharmacy") return <Navigate to="/auth/login" />;
 
   useEffect(() => {
-    const LIVE_ITEMS = [
-      { batch: "CLN-88210-F", med: "Calpol Syrup", result: "genuine" as const, time: "just now", by: "Patient" },
-      { batch: "DIS-44120-G", med: "Disprol 500mg", result: "suspicious" as const, time: "just now", by: "Staff" },
-      { batch: "PNX-49281-A", med: "Panadol Extra", result: "genuine" as const, time: "just now", by: "Patient" },
-    ];
-    const id = setInterval(() => {
-      const pick = LIVE_ITEMS[Math.floor(Math.random() * LIVE_ITEMS.length)];
-      setLiveLog((prev) => [{ ...pick, time: "just now" }, ...prev].slice(0, 8));
-    }, 3500);
-    return () => clearInterval(id);
-  }, []);
+    if (!session?.token) return;
+    fetch("/api/pharmacy/scan-logs", {
+      headers: { "Authorization": `Bearer ${session.token}` }
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success && data.data) {
+          setLiveLog(data.data.map((log: any) => ({
+            batch: log.code,
+            med: log.pill?.batch?.medicine?.name ?? log.medicine?.name ?? "Unknown Medicine",
+            result: log.status === "GENUINE" ? "genuine" : log.status === "INVALID" ? "fake" : "suspicious",
+            time: new Date(log.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            by: log.userId ? "Staff" : "Public"
+          })));
+        }
+      })
+      .catch(() => { });
+  }, [session?.token]);
 
   return (
     <DashShell
@@ -128,7 +356,11 @@ function Page() {
           <Button variant="outline" size="sm" className="rounded-full border-border/60 text-[12px] font-medium gap-1.5">
             <Filter className="h-3.5 w-3.5" /> Filter
           </Button>
-          <Button size="sm" className="rounded-full bg-gradient-primary shadow-elegant text-[12px] font-medium gap-1.5 transition-all duration-300 hover:shadow-card-hover hover:scale-[1.02]">
+          <Button
+            onClick={() => setShowScanModal(true)}
+            size="sm"
+            className="rounded-full bg-gradient-primary shadow-elegant text-[12px] font-medium gap-1.5 transition-all duration-300 hover:shadow-card-hover hover:scale-[1.02]"
+          >
             <ScanLine className="h-3.5 w-3.5" /> Scan Stock
           </Button>
         </div>
@@ -141,7 +373,10 @@ function Page() {
         transition={{ duration: 0.5, ease }}
         className="mb-6 flex flex-wrap gap-2.5"
       >
-        <Button className="rounded-full bg-gradient-primary shadow-elegant text-[13px] font-medium transition-all duration-300 hover:shadow-card-hover hover:scale-[1.02]">
+        <Button
+          onClick={() => setShowScanModal(true)}
+          className="rounded-full bg-gradient-primary shadow-elegant text-[13px] font-medium transition-all duration-300 hover:shadow-card-hover hover:scale-[1.02]"
+        >
           <ScanLine className="mr-2 h-4 w-4" /> Scan Incoming Stock
         </Button>
         <Button variant="outline" className="rounded-full text-[13px] font-medium border-border/60 hover:border-primary/30">
@@ -190,6 +425,7 @@ function Page() {
         <PerformanceInsightsWidget />
       </div>
 
+      {showScanModal && <PharmacyScanModal onClose={() => setShowScanModal(false)} session={session} user={user} />}
     </DashShell>
   );
 }

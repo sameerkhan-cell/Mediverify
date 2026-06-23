@@ -7,7 +7,7 @@ import { ease } from "@/lib/motion";
 import { useState } from "react";
 
 interface DualQRCardProps {
-    type: "box" | "pill";
+    type: "carton" | "box" | "pill";
     qrValue: string;
     label: string;
     sublabel?: string;
@@ -28,14 +28,15 @@ export function DualQRCard({
     const qrRef = useRef<HTMLDivElement>(null);
     const [copied, setCopied] = useState(false);
 
+    const isCarton = type === "carton";
     const isBox = type === "box";
-    const Icon = isBox ? Package : Pill;
-    const accent = isBox
-        ? "from-primary/20 via-primary/5 to-transparent"
-        : "from-success/20 via-success/5 to-transparent";
-    const dotColor = isBox ? "bg-primary" : "bg-success";
-    const textColor = isBox ? "text-primary" : "text-success";
-    const borderColor = isBox ? "border-primary/30" : "border-success/30";
+    const Icon = isCarton ? Package : (isBox ? Package : Pill);
+    const accent = isCarton
+        ? "from-amber-500/20 via-amber-500/5 to-transparent"
+        : (isBox ? "from-primary/20 via-primary/5 to-transparent" : "from-success/20 via-success/5 to-transparent");
+    const dotColor = isCarton ? "bg-amber-500" : (isBox ? "bg-primary" : "bg-success");
+    const textColor = isCarton ? "text-amber-500" : (isBox ? "text-primary" : "text-success");
+    const borderColor = isCarton ? "border-amber-500/30" : (isBox ? "border-primary/30" : "border-success/30");
 
     const handleCopy = () => {
         navigator.clipboard.writeText(qrValue);
@@ -72,10 +73,10 @@ export function DualQRCard({
                         </div>
                         <div>
                             <p className={`text-[12px] font-bold uppercase tracking-wider ${textColor}`}>
-                                {isBox ? "Box QR" : "Pill QR"}
+                                {isCarton ? "Carton QR" : (isBox ? "Box QR" : "Pill QR")}
                             </p>
                             {badge && (
-                                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${isBox ? "bg-primary/10 text-primary" : "bg-success/10 text-success"}`}>
+                                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${isCarton ? "bg-amber-500/10 text-amber-500" : (isBox ? "bg-primary/10 text-primary" : "bg-success/10 text-success")}`}>
                                     {badge}
                                 </span>
                             )}
@@ -123,7 +124,7 @@ export function DualQRCard({
                 </div>
 
                 {/* Actions */}
-                <div className="flex gap-2">
+                <div className="flex gap-2 w-full">
                     <Button
                         variant="outline"
                         size="sm"
@@ -138,7 +139,7 @@ export function DualQRCard({
                     <Button
                         size="sm"
                         onClick={handleDownload}
-                        className={`flex-1 rounded-xl text-[11px] h-8 ${isBox ? "bg-gradient-primary" : "bg-gradient-success"} text-white shadow-elegant`}
+                        className={`flex-1 rounded-xl text-[11px] h-8 ${isCarton ? "bg-gradient-to-br from-amber-500 to-amber-600" : (isBox ? "bg-gradient-primary" : "bg-gradient-success")} text-white shadow-elegant`}
                     >
                         <Download className="mr-1 h-3 w-3" />PNG
                     </Button>

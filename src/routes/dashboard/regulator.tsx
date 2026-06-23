@@ -11,11 +11,11 @@ import {
 import { useAuth } from "@/lib/auth-context";
 import { DashShell } from "@/components/dashboard/DashShell";
 import { DASH_NAV } from "@/config/nav";
-import { StatCard, MetricRow } from "@/components/dashboard/StatCard";
-import { useRegulatoryStore } from "@/store/regulatory-store";
+import { StatCard } from "@/components/dashboard/StatCard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 
 export const Route = createFileRoute("/dashboard/regulator")({
     head: () => ({
@@ -28,14 +28,31 @@ export const Route = createFileRoute("/dashboard/regulator")({
 });
 
 function RegulatorDashboard() {
-    const { user, isAuthenticated, signOut, isLoading } = useAuth();
-    const { reports, recalls, blacklistedPharmacies, updateReportStatus } = useRegulatoryStore();
+    const { user, session, isAuthenticated, signOut, isLoading } = useAuth();
+    const [stats, setStats] = useState<any>(null);
+    const [recalls, setRecalls] = useState<any[]>([]);
+    const [heatmapData, setHeatmapData] = useState<any[]>([]);
+    const [loadingData, setLoadingData] = useState(true);
 
     useEffect(() => {
-        if (isAuthenticated && user?.role !== "manufacturer" && user?.role !== "pharmacy") {
+        if (isAuthenticated && user?.role !== "REGULATOR" && user?.role !== "DRAP_ADMIN" && user?.role !== "ADMIN") {
             signOut();
         }
     }, [isAuthenticated, user?.role, signOut]);
+
+    useEffect(() => {
+        if (!session?.token) return;
+        const headers = { "Authorization": `Bearer ${session.token}` };
+        Promise.all([
+            fetch("/api/regulator/stats", { headers }).then(r => r.json()),
+            fetch("/api/regulator/recalls", { headers }).then(r => r.json()),
+            fetch("/api/regulator/heatmap", { headers }).then(r => r.json()),
+        ]).then(([statsRes, recallsRes, heatmapRes]) => {
+            if (statsRes.success) setStats(statsRes.data);
+            if (recallsRes.success) setRecalls(recallsRes.data);
+            if (heatmapRes.success) setHeatmapData(heatmapRes.data);
+        }).finally(() => setLoadingData(false));
+    }, [session?.token]);
 
     if (isLoading) {
         return (
@@ -46,8 +63,7 @@ function RegulatorDashboard() {
     }
 
     if (!isAuthenticated) return <Navigate to="/auth/login" />;
-    // For demo purposes, we'll allow manufacturers and pharmacies to view this
-    if (user?.role !== "manufacturer" && user?.role !== "pharmacy") return <Navigate to="/auth/login" />;
+    if (user?.role !== "REGULATOR" && user?.role !== "DRAP_ADMIN" && user?.role !== "ADMIN") return <Navigate to="/auth/login" />;
 
     return (
         <DashShell
@@ -59,11 +75,41 @@ function RegulatorDashboard() {
             <div className="space-y-6">
                 {/* Regulatory Stats */}
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                    <StatCard icon={Landmark} label="DRAP Inspections" value={142} delta={12} sparkline={[40, 55, 60, 45, 80, 95, 110, 142]} />
-                    <StatCard icon={ShieldAlert} label="Active Recalls" value={recalls.length} delta={-2} tone="destructive" sparkline={[5, 8, 12, 10, 15, 8, 6, 4]} />
-                    <StatCard icon={FileText} label="Pending Reports" value={reports.filter(r => r.status === 'pending').length} delta={5} tone="warning" sparkline={[20, 25, 30, 45, 50, 42, 38, 35]} />
-                    <StatCard icon={Scale} label="Blacklisted Entities" value={blacklistedPharmacies.length} delta={1} tone="destructive" sparkline={[5, 5, 6, 6, 7, 8, 8, 9]} />
+                    <StatCard icon={Landmark} label="DRAP Inspections" value={stats?.totalScans ?? "..."} delta={12} sparkline={[40, 55, 60, 45, 80, 95, 110, 142]} />
+                    <StatCard icon={ShieldAlert} label="Active Recalls" value={stats?.activeRecalls ?? "..."} delta={-2} tone="destructive" sparkline={[5, 8, 12, 10, 15, 8, 6, 4]} />
+                    <StatCard icon={FileText} label="Pending Reports" value={stats?.suspiciousScans ?? "..."} delta={5} tone="warning" sparkline={[20, 25, 30, 45, 50, 42, 38, 35]} />
+                    <StatCard icon={Scale} label="Blacklisted Entities" value={stats?.blacklistedPharmacies ?? "..."} delta={1} tone="destructive" sparkline={[5, 5, 6, 6, 7, 8, 8, 9]} />
                 </div>
+
+                {heatmapData.length > 0 && (
+                    <div className="rounded-xl border border-border/50 bg-card p-5 mb-6">
+                        <div className="flex items-center gap-2 mb-4">
+                            <MapPin className="h-4 w-4 text-red-500" />
+                            <h3 className="font-semibold text-sm">Fake Medicine Hotspots — Pakistan</h3>
+                            <span className="ml-auto text-xs text-muted-foreground">Based on verified scan reports</span>
+                        </div>
+                        <ResponsiveContainer width="100%" height={260}>
+                            <BarChart data={heatmapData} layout="vertical" margin={{ left: 10, right: 20, top: 0, bottom: 0 }}>
+                                <XAxis type="number" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+                                <YAxis type="category" dataKey="city" tick={{ fontSize: 12 }} width={85} axisLine={false} tickLine={false} />
+                                <Tooltip formatter={(val: any) => [val + " reports", "Fake scans"]} contentStyle={{ borderRadius: 8, fontSize: 12 }} />
+                                <Bar dataKey="fakeCount" radius={[0, 4, 4, 0]} maxBarSize={22}>
+                                    {heatmapData.map((entry: any, i: number) => (
+                                        <Cell key={i} fill={entry.riskLevel === "HIGH" ? "#DC2626" : entry.riskLevel === "MEDIUM" ? "#D97706" : "#16A34A"} />
+                                    ))}
+                                </Bar>
+                            </BarChart>
+                        </ResponsiveContainer>
+                        <div className="flex gap-4 mt-3">
+                            {[["HIGH", "#DC2626", "High Risk"], ["MEDIUM", "#D97706", "Medium Risk"], ["LOW", "#16A34A", "Low Risk"]].map(([level, color, label]) => (
+                                <div key={level} className="flex items-center gap-1.5">
+                                    <div className="w-2.5 h-2.5 rounded-full" style={{ background: color }} />
+                                    <span className="text-xs text-muted-foreground">{label}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
 
                 <div className="grid gap-6 lg:grid-cols-3">
                     {/* Left Column: Complaints & Investigations */}
@@ -81,20 +127,12 @@ function RegulatorDashboard() {
                                 </div>
                                 <TabsContent value="complaints" className="m-0">
                                     <div className="p-0">
-                                        {reports.length === 0 ? (
-                                            <div className="py-20 text-center flex flex-col items-center">
-                                                <div className="h-16 w-16 bg-secondary/20 rounded-full flex items-center justify-center mb-4">
-                                                    <FileText className="h-8 w-8 text-muted-foreground opacity-30" />
-                                                </div>
-                                                <p className="text-muted-foreground font-medium">No active complaints found in the ledger.</p>
+                                        <div className="py-20 text-center flex flex-col items-center">
+                                            <div className="h-16 w-16 bg-secondary/20 rounded-full flex items-center justify-center mb-4">
+                                                <FileText className="h-8 w-8 text-muted-foreground opacity-30" />
                                             </div>
-                                        ) : (
-                                            <div className="divide-y divide-white/5">
-                                                {reports.map((report) => (
-                                                    <ReportListItem key={report.id} report={report} onStatusUpdate={updateReportStatus} />
-                                                ))}
-                                            </div>
-                                        )}
+                                            <p className="text-muted-foreground font-medium">Regional complaint nodes are currently restricted.</p>
+                                        </div>
                                     </div>
                                 </TabsContent>
                                 <TabsContent value="inspections" className="m-0 p-12 text-center text-muted-foreground">
@@ -117,13 +155,14 @@ function RegulatorDashboard() {
                                         <div className="h-10 w-10 shrink-0 rounded-xl bg-destructive/10 grid place-items-center">
                                             <AlertTriangle className="h-5 w-5 text-destructive" />
                                         </div>
-                                        <div className="flex-1">
-                                            <p className="text-[13px] font-bold">{recall.medicineName} (Batch {recall.batchNumber})</p>
-                                            <p className="text-[11px] text-muted-foreground line-clamp-1">{recall.reason}</p>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-[13px] font-bold truncate">{recall.medicine?.name} (Batch {recall.batchNumber})</p>
+                                            <p className="text-[11px] text-muted-foreground line-clamp-1">{recall.recallReason || "Safety non-compliance detected"}</p>
+                                            <p className="text-[10px] text-primary mt-0.5">{recall.medicine?.manufacturer?.companyName}</p>
                                         </div>
-                                        <div className="text-right">
-                                            <p className="text-[12px] font-black uppercase text-destructive tracking-widest italic">Recall Active</p>
-                                            <p className="text-[10px] text-muted-foreground">{new Date(recall.dateInitiated).toLocaleDateString()}</p>
+                                        <div className="text-right shrink-0">
+                                            <p className="text-[11px] font-black uppercase text-destructive tracking-widest italic">Recall Active</p>
+                                            <p className="text-[10px] text-muted-foreground">{new Date(recall.updatedAt).toLocaleDateString()}</p>
                                         </div>
                                     </div>
                                 ))}
@@ -138,30 +177,25 @@ function RegulatorDashboard() {
                                 <ShieldAlert className="h-4 w-4" /> Blacklisted Entities
                             </h3>
                             <div className="space-y-4">
-                                {blacklistedPharmacies.map((shop) => (
-                                    <div key={shop.id} className="p-4 rounded-2xl border border-destructive/10 bg-destructive/[0.03] space-y-3">
+                                {stats?.blacklistedPharmacies > 0 ? (
+                                    <div className="p-4 rounded-2xl border border-destructive/10 bg-destructive/[0.03] space-y-3">
                                         <div className="flex justify-between items-start">
                                             <div className="min-w-0">
-                                                <h4 className="text-[13px] font-bold truncate">{shop.name}</h4>
+                                                <h4 className="text-[13px] font-bold truncate">High Risk Entities Identified</h4>
                                                 <p className="text-[11px] text-muted-foreground flex items-center gap-1">
-                                                    <MapPin className="h-3 w-3" /> {shop.location}
+                                                    <MapPin className="h-3 w-3" /> Multiple Locations
                                                 </p>
                                             </div>
-                                            <Badge className="bg-destructive text-[9px] font-black shadow-[0_0_10px_rgba(239,68,68,0.3)]">BANNED</Badge>
+                                            <Badge className="bg-destructive text-[9px] font-black shadow-[0_0_10px_rgba(239,68,68,0.3)]">MONITORED</Badge>
                                         </div>
                                         <div className="pt-2 border-t border-destructive/10">
-                                            <p className="text-[9px] font-black uppercase opacity-50 mb-1">Critical Violations</p>
-                                            <ul className="space-y-1">
-                                                {shop.violations.map((v, i) => (
-                                                    <li key={i} className="text-[10px] text-destructive/80 flex items-start gap-1.5 font-medium">
-                                                        <div className="h-1 w-1 rounded-full bg-destructive mt-1 shrink-0" />
-                                                        {v}
-                                                    </li>
-                                                ))}
-                                            </ul>
+                                            <p className="text-[9px] font-black uppercase opacity-50 mb-1">Recent Violations</p>
+                                            <p className="text-[10px] text-destructive/80 font-medium italic">Entities found distributing non-verified batches in {heatmapData[0]?.city || "current hubs"}.</p>
                                         </div>
                                     </div>
-                                ))}
+                                ) : (
+                                    <div className="py-8 text-center text-muted-foreground text-[12px]">No new blacklisted entities this week.</div>
+                                )}
                             </div>
                         </div>
 

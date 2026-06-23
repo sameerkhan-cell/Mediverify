@@ -7,6 +7,7 @@ export interface BatchRegistrationForm {
     expiryDate: string;
     quantityBoxes: number;
     totalPillsPerBox: number;
+    totalCartons: number;
     manufacturerCode: string;
     drapLicense: string;
     productCategory: string;
@@ -31,6 +32,22 @@ export interface MedicineBatch {
     createdAt: string;
     txHash: string;
     status: "Active" | "Recalled" | "Expired";
+    cartons?: CartonRecord[];
+    boxes?: BoxRecord[];
+}
+
+export interface CartonRecord {
+    id: string;
+    cartonNumber: string;
+    qrCode: string;
+    boxesCount: number;
+}
+
+export interface BoxRecord {
+    id: string;
+    boxNumber: string;
+    qrCode: string;
+    pillsCount: number;
 }
 
 export interface PillRecord {
