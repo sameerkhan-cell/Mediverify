@@ -16,6 +16,7 @@ import {
   Globe2,
   Landmark,
   Library,
+  Shield,
 } from "lucide-react";
 
 export const DASH_NAV = [
@@ -24,6 +25,7 @@ export const DASH_NAV = [
   { to: "/dashboard/monitoring", label: "Intelligence Center", icon: Activity, group: "main", roles: ["manufacturer", "pharmacy"] },
   { to: "/dashboard/regulator", label: "DRAP Portal", icon: Landmark, group: "main", roles: ["manufacturer", "pharmacy"] },
   { to: "/dashboard/blockchain", label: "Blockchain", icon: Hash, group: "main", roles: ["manufacturer", "pharmacy"] },
+  { to: "/dashboard/admin", label: "DRAP Admin", icon: Shield, group: "main", roles: ["ADMIN", "SUPER_ADMIN", "DRAP_ADMIN"] },
   { to: "/dashboard/qr-library", label: "QR Library", icon: Library, group: "tools", roles: ["manufacturer"] },
   { to: "/report", label: "Reports", icon: FileWarning, group: "tools", roles: ["manufacturer", "pharmacy", "customer"] },
   { to: "/dashboard/settings", label: "Settings", icon: Globe2, group: "tools", roles: ["manufacturer", "pharmacy", "customer"] },

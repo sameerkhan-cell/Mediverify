@@ -9,6 +9,7 @@ import {
 } from "@tanstack/react-router";
 import { Toaster } from "sonner";
 import { AuthProvider } from "@/lib/auth-context";
+import { ThemeProvider } from "@/lib/theme-context";
 
 import appCss from "../styles.css?url";
 
@@ -109,6 +110,54 @@ function RootShell({ children }: { children: React.ReactNode }) {
     <html lang="en">
       <head>
         <HeadContent />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  const path = window.location.pathname;
+                  let portal = 'public';
+                  
+                  if (path.startsWith('/dashboard')) {
+                    let role = null;
+                    try {
+                      const raw = localStorage.getItem('mediverify_session') || sessionStorage.getItem('mediverify_session');
+                      if (raw) {
+                        const session = JSON.parse(raw);
+                        if (session && session.user && session.user.role) {
+                          role = session.user.role.toLowerCase();
+                        }
+                      }
+                    } catch (e) {}
+
+                    if (role === 'admin' || role === 'super_admin' || role === 'drap_admin') portal = 'admin';
+                    else if (role === 'manufacturer') portal = 'manufacturer';
+                    else if (role === 'pharmacy') portal = 'pharmacy';
+                    else if (role === 'regulator') portal = 'regulator';
+                    else if (role === 'customer' || role === 'patient') portal = 'patient';
+                    else {
+                      if (path.includes('/dashboard/admin')) portal = 'admin';
+                      else if (path.includes('/dashboard/manufacturer')) portal = 'manufacturer';
+                      else if (path.includes('/dashboard/pharmacy')) portal = 'pharmacy';
+                      else if (path.includes('/dashboard/regulator')) portal = 'regulator';
+                      else if (path.includes('/dashboard/patient')) portal = 'patient';
+                    }
+                  }
+                  
+                  const theme = localStorage.getItem('theme-' + portal) || 'light';
+                  if (theme === 'system') {
+                    const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                    document.documentElement.classList.add(systemTheme);
+                  } else if (theme === 'dark') {
+                    document.documentElement.classList.add('dark');
+                  } else {
+                    document.documentElement.classList.remove('dark');
+                  }
+                } catch (e) {}
+              })()
+            `,
+          }}
+        />
       </head>
       <body>
         {children}
@@ -125,21 +174,23 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <Outlet />
-        <Toaster
-          position="top-right"
-          toastOptions={{
-            classNames: {
-              toast:
-                "!bg-card !border-border/60 !shadow-elegant !rounded-2xl !font-sans",
-              title: "!text-foreground !text-[13px] !font-semibold",
-              description: "!text-muted-foreground !text-[12px]",
-              success: "!border-success/20",
-              error: "!border-destructive/20",
-              info: "!border-primary/20",
-            },
-          }}
-        />
+        <ThemeProvider>
+          <Outlet />
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              classNames: {
+                toast:
+                  "!bg-card !border-border/60 !shadow-elegant !rounded-2xl !font-sans",
+                title: "!text-foreground !text-[13px] !font-semibold",
+                description: "!text-muted-foreground !text-[12px]",
+                success: "!border-success/20",
+                error: "!border-destructive/20",
+                info: "!border-primary/20",
+              },
+            }}
+          />
+        </ThemeProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

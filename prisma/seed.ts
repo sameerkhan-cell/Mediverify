@@ -269,6 +269,20 @@ async function main() {
     console.log("Regulator (DRAP):      regulator@mediverify.com");
     console.log("Patient:               patient@mediverify.com");
 
+    // ─── DRAP Admin account ─────────────────────────────────────────────────────
+    await prisma.user.upsert({
+        where: { email: "admin@mediverify.com" },
+        update: {},
+        create: {
+            email: "admin@mediverify.com",
+            name: "DRAP Admin",
+            passwordHash,
+            role: "ADMIN",
+        }
+    });
+
+    console.log("Admin account: admin@mediverify.com / Password123!");
+
     console.log("\n🎯 DEMO BATCH FOR TESTING: PND-2024-001");
     console.log("Sample Carton QR:  CARTON-PND-2024-001-001-GSK");
     console.log("Sample Box QR:     BOX-PND-2024-001-0001-GSK");

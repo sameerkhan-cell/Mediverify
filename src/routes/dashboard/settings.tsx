@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { ease } from "@/lib/motion";
+import { useTheme } from "@/lib/theme-context";
 
 export const Route = createFileRoute("/dashboard/settings")({
   head: () => ({ meta: [{ title: "Settings — MediVerify" }] }),
@@ -245,15 +246,40 @@ function PrivacySettings() {
 }
 
 function AppearanceSettings() {
+  const { theme, setTheme, portal } = useTheme();
+
+  const themes: { label: "Light" | "Dark" | "System"; value: "light" | "dark" | "system" }[] = [
+    { label: "Light", value: "light" },
+    { label: "Dark", value: "dark" },
+    { label: "System", value: "system" }
+  ];
+
   return (
     <div className="card-premium p-6 space-y-3">
       <h3 className="text-[16px] font-semibold flex items-center gap-2"><Palette className="h-4 w-4 text-primary" /> Appearance</h3>
+      <p className="text-[11px] text-muted-foreground leading-tight">
+        Customize the theme of your portal. This setting only applies to the <span className="font-semibold capitalize">{portal === "public" ? "patient" : portal}</span> dashboard.
+      </p>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        {[{ label: "Light", active: true }, { label: "Dark", active: false }, { label: "System", active: false }].map(t => (
-          <button key={t.label} className={`rounded-xl border p-4 text-center text-[13px] font-medium transition-all ${t.active ? "border-primary bg-primary/10 text-primary" : "border-border/40 bg-secondary/20 text-muted-foreground hover:bg-accent"} ${t.label === "System" ? "col-span-2 sm:col-span-1" : ""}`}>
-            {t.label}
-          </button>
-        ))}
+        {themes.map(t => {
+          const active = theme === t.value;
+          return (
+            <button
+              key={t.value}
+              onClick={() => {
+                setTheme(t.value);
+                toast.success(`Theme set to ${t.label} for ${portal === "public" ? "patient" : portal} dashboard`);
+              }}
+              className={`rounded-xl border p-4 text-center text-[13px] font-medium transition-all cursor-pointer ${
+                active
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border/40 bg-secondary/20 text-muted-foreground hover:bg-accent"
+              } ${t.value === "system" ? "col-span-2 sm:col-span-1" : ""}`}
+            >
+              {t.label}
+            </button>
+          );
+        })}
       </div>
       <Toggle label="Reduce Animations" desc="Minimize motion effects for accessibility" />
       <Toggle label="Compact Mode" desc="Use smaller spacing and text sizes" />

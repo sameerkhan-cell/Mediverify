@@ -70,6 +70,10 @@ function LoginPage() {
         navigate({ to: "/dashboard/pharmacy" });
       } else if (role === "manufacturer") {
         navigate({ to: "/dashboard/manufacturer" });
+      } else if (role === "admin" || role === "super_admin" || role === "drap_admin") {
+        navigate({ to: "/dashboard/admin" });
+      } else if (role === "regulator") {
+        navigate({ to: "/dashboard/regulator" });
       } else {
         navigate({ to: "/dashboard/patient" });
       }
@@ -117,6 +121,10 @@ function LoginPage() {
         navigate({ to: "/dashboard/pharmacy" });
       } else if (role === "manufacturer") {
         navigate({ to: "/dashboard/manufacturer" });
+      } else if (role === "admin" || role === "super_admin" || role === "drap_admin") {
+        navigate({ to: "/dashboard/admin" });
+      } else if (role === "regulator") {
+        navigate({ to: "/dashboard/regulator" });
       } else {
         navigate({ to: "/dashboard/patient" });
       }

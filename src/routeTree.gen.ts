@@ -25,6 +25,7 @@ import { Route as DashboardPatientRouteImport } from './routes/dashboard/patient
 import { Route as DashboardMonitoringRouteImport } from './routes/dashboard/monitoring'
 import { Route as DashboardManufacturerRouteImport } from './routes/dashboard/manufacturer'
 import { Route as DashboardBlockchainRouteImport } from './routes/dashboard/blockchain'
+import { Route as DashboardAdminRouteImport } from './routes/dashboard/admin'
 import { Route as AuthVerifyMfaRouteImport } from './routes/auth/verify-mfa'
 import { Route as AuthSignupRouteImport } from './routes/auth/signup'
 import { Route as AuthResetPasswordRouteImport } from './routes/auth/reset-password'
@@ -67,15 +68,20 @@ import { Route as ApiAuthGoogleRouteImport } from './routes/api/auth/google'
 import { Route as ApiAuthForgotPasswordRouteImport } from './routes/api/auth/forgot-password'
 import { Route as ApiAuthChangePasswordRouteImport } from './routes/api/auth/change-password'
 import { Route as ApiAiInsightsRouteImport } from './routes/api/ai/insights'
+import { Route as ApiAdminRecallsRouteImport } from './routes/api/admin/recalls'
+import { Route as ApiAdminMedicinesRouteImport } from './routes/api/admin/medicines'
 import { Route as ApiAdminDashboardRouteImport } from './routes/api/admin/dashboard'
+import { Route as ApiAdminBatchSequencesRouteImport } from './routes/api/admin/batch-sequences'
 import { Route as ApiManufacturerProfileLogoUploadRouteImport } from './routes/api/manufacturer/profile.logo-upload'
 import { Route as ApiManufacturerProfileLogoImageRouteImport } from './routes/api/manufacturer/profile.logo-image'
 import { Route as ApiManufacturerProfileLogoRouteImport } from './routes/api/manufacturer/profile.logo'
 import { Route as ApiManufacturerDocumentsUploadRouteImport } from './routes/api/manufacturer/documents/upload'
 import { Route as ApiManufacturerDocumentsIdRouteImport } from './routes/api/manufacturer/documents.$id'
 import { Route as ApiManufacturerBatchIdRouteImport } from './routes/api/manufacturer/batch.$id'
+import { Route as ApiAdminRecallsIdRouteImport } from './routes/api/admin/recalls.$id'
 import { Route as ApiAdminRecallCreateRouteImport } from './routes/api/admin/recall/create'
 import { Route as ApiAdminPharmacyBlacklistRouteImport } from './routes/api/admin/pharmacy/blacklist'
+import { Route as ApiAdminMedicinesIdRouteImport } from './routes/api/admin/medicines.$id'
 import { Route as ApiManufacturerBatchIdAssetsRouteImport } from './routes/api/manufacturer/batch.$id.assets'
 import { Route as ApiAdminDocumentsIdReviewRouteImport } from './routes/api/admin/documents.$id.review'
 import { Route as ApiAdminDocumentsIdRejectRouteImport } from './routes/api/admin/documents.$id.reject'
@@ -160,6 +166,11 @@ const DashboardManufacturerRoute = DashboardManufacturerRouteImport.update({
 const DashboardBlockchainRoute = DashboardBlockchainRouteImport.update({
   id: '/dashboard/blockchain',
   path: '/dashboard/blockchain',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardAdminRoute = DashboardAdminRouteImport.update({
+  id: '/dashboard/admin',
+  path: '/dashboard/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthVerifyMfaRoute = AuthVerifyMfaRouteImport.update({
@@ -379,9 +390,24 @@ const ApiAiInsightsRoute = ApiAiInsightsRouteImport.update({
   path: '/api/ai/insights',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAdminRecallsRoute = ApiAdminRecallsRouteImport.update({
+  id: '/api/admin/recalls',
+  path: '/api/admin/recalls',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAdminMedicinesRoute = ApiAdminMedicinesRouteImport.update({
+  id: '/api/admin/medicines',
+  path: '/api/admin/medicines',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAdminDashboardRoute = ApiAdminDashboardRouteImport.update({
   id: '/api/admin/dashboard',
   path: '/api/admin/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAdminBatchSequencesRoute = ApiAdminBatchSequencesRouteImport.update({
+  id: '/api/admin/batch-sequences',
+  path: '/api/admin/batch-sequences',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiManufacturerProfileLogoUploadRoute =
@@ -419,6 +445,11 @@ const ApiManufacturerBatchIdRoute = ApiManufacturerBatchIdRouteImport.update({
   path: '/api/manufacturer/batch/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAdminRecallsIdRoute = ApiAdminRecallsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ApiAdminRecallsRoute,
+} as any)
 const ApiAdminRecallCreateRoute = ApiAdminRecallCreateRouteImport.update({
   id: '/api/admin/recall/create',
   path: '/api/admin/recall/create',
@@ -430,6 +461,11 @@ const ApiAdminPharmacyBlacklistRoute =
     path: '/api/admin/pharmacy/blacklist',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiAdminMedicinesIdRoute = ApiAdminMedicinesIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ApiAdminMedicinesRoute,
+} as any)
 const ApiManufacturerBatchIdAssetsRoute =
   ApiManufacturerBatchIdAssetsRouteImport.update({
     id: '/assets',
@@ -475,6 +511,7 @@ export interface FileRoutesByFullPath {
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/auth/signup': typeof AuthSignupRoute
   '/auth/verify-mfa': typeof AuthVerifyMfaRoute
+  '/dashboard/admin': typeof DashboardAdminRoute
   '/dashboard/blockchain': typeof DashboardBlockchainRoute
   '/dashboard/manufacturer': typeof DashboardManufacturerRoute
   '/dashboard/monitoring': typeof DashboardMonitoringRoute
@@ -484,7 +521,10 @@ export interface FileRoutesByFullPath {
   '/dashboard/qr-library': typeof DashboardQrLibraryRoute
   '/dashboard/regulator': typeof DashboardRegulatorRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
+  '/api/admin/batch-sequences': typeof ApiAdminBatchSequencesRoute
   '/api/admin/dashboard': typeof ApiAdminDashboardRoute
+  '/api/admin/medicines': typeof ApiAdminMedicinesRouteWithChildren
+  '/api/admin/recalls': typeof ApiAdminRecallsRouteWithChildren
   '/api/ai/insights': typeof ApiAiInsightsRoute
   '/api/auth/change-password': typeof ApiAuthChangePasswordRoute
   '/api/auth/forgot-password': typeof ApiAuthForgotPasswordRoute
@@ -521,8 +561,10 @@ export interface FileRoutesByFullPath {
   '/api/verify/history': typeof ApiVerifyHistoryRoute
   '/api/report/': typeof ApiReportIndexRoute
   '/api/verify/': typeof ApiVerifyIndexRoute
+  '/api/admin/medicines/$id': typeof ApiAdminMedicinesIdRoute
   '/api/admin/pharmacy/blacklist': typeof ApiAdminPharmacyBlacklistRoute
   '/api/admin/recall/create': typeof ApiAdminRecallCreateRoute
+  '/api/admin/recalls/$id': typeof ApiAdminRecallsIdRoute
   '/api/manufacturer/batch/$id': typeof ApiManufacturerBatchIdRouteWithChildren
   '/api/manufacturer/documents/$id': typeof ApiManufacturerDocumentsIdRoute
   '/api/manufacturer/documents/upload': typeof ApiManufacturerDocumentsUploadRoute
@@ -549,6 +591,7 @@ export interface FileRoutesByTo {
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/auth/signup': typeof AuthSignupRoute
   '/auth/verify-mfa': typeof AuthVerifyMfaRoute
+  '/dashboard/admin': typeof DashboardAdminRoute
   '/dashboard/blockchain': typeof DashboardBlockchainRoute
   '/dashboard/manufacturer': typeof DashboardManufacturerRoute
   '/dashboard/monitoring': typeof DashboardMonitoringRoute
@@ -558,7 +601,10 @@ export interface FileRoutesByTo {
   '/dashboard/qr-library': typeof DashboardQrLibraryRoute
   '/dashboard/regulator': typeof DashboardRegulatorRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
+  '/api/admin/batch-sequences': typeof ApiAdminBatchSequencesRoute
   '/api/admin/dashboard': typeof ApiAdminDashboardRoute
+  '/api/admin/medicines': typeof ApiAdminMedicinesRouteWithChildren
+  '/api/admin/recalls': typeof ApiAdminRecallsRouteWithChildren
   '/api/ai/insights': typeof ApiAiInsightsRoute
   '/api/auth/change-password': typeof ApiAuthChangePasswordRoute
   '/api/auth/forgot-password': typeof ApiAuthForgotPasswordRoute
@@ -595,8 +641,10 @@ export interface FileRoutesByTo {
   '/api/verify/history': typeof ApiVerifyHistoryRoute
   '/api/report': typeof ApiReportIndexRoute
   '/api/verify': typeof ApiVerifyIndexRoute
+  '/api/admin/medicines/$id': typeof ApiAdminMedicinesIdRoute
   '/api/admin/pharmacy/blacklist': typeof ApiAdminPharmacyBlacklistRoute
   '/api/admin/recall/create': typeof ApiAdminRecallCreateRoute
+  '/api/admin/recalls/$id': typeof ApiAdminRecallsIdRoute
   '/api/manufacturer/batch/$id': typeof ApiManufacturerBatchIdRouteWithChildren
   '/api/manufacturer/documents/$id': typeof ApiManufacturerDocumentsIdRoute
   '/api/manufacturer/documents/upload': typeof ApiManufacturerDocumentsUploadRoute
@@ -624,6 +672,7 @@ export interface FileRoutesById {
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/auth/signup': typeof AuthSignupRoute
   '/auth/verify-mfa': typeof AuthVerifyMfaRoute
+  '/dashboard/admin': typeof DashboardAdminRoute
   '/dashboard/blockchain': typeof DashboardBlockchainRoute
   '/dashboard/manufacturer': typeof DashboardManufacturerRoute
   '/dashboard/monitoring': typeof DashboardMonitoringRoute
@@ -633,7 +682,10 @@ export interface FileRoutesById {
   '/dashboard/qr-library': typeof DashboardQrLibraryRoute
   '/dashboard/regulator': typeof DashboardRegulatorRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
+  '/api/admin/batch-sequences': typeof ApiAdminBatchSequencesRoute
   '/api/admin/dashboard': typeof ApiAdminDashboardRoute
+  '/api/admin/medicines': typeof ApiAdminMedicinesRouteWithChildren
+  '/api/admin/recalls': typeof ApiAdminRecallsRouteWithChildren
   '/api/ai/insights': typeof ApiAiInsightsRoute
   '/api/auth/change-password': typeof ApiAuthChangePasswordRoute
   '/api/auth/forgot-password': typeof ApiAuthForgotPasswordRoute
@@ -670,8 +722,10 @@ export interface FileRoutesById {
   '/api/verify/history': typeof ApiVerifyHistoryRoute
   '/api/report/': typeof ApiReportIndexRoute
   '/api/verify/': typeof ApiVerifyIndexRoute
+  '/api/admin/medicines/$id': typeof ApiAdminMedicinesIdRoute
   '/api/admin/pharmacy/blacklist': typeof ApiAdminPharmacyBlacklistRoute
   '/api/admin/recall/create': typeof ApiAdminRecallCreateRoute
+  '/api/admin/recalls/$id': typeof ApiAdminRecallsIdRoute
   '/api/manufacturer/batch/$id': typeof ApiManufacturerBatchIdRouteWithChildren
   '/api/manufacturer/documents/$id': typeof ApiManufacturerDocumentsIdRoute
   '/api/manufacturer/documents/upload': typeof ApiManufacturerDocumentsUploadRoute
@@ -700,6 +754,7 @@ export interface FileRouteTypes {
     | '/auth/reset-password'
     | '/auth/signup'
     | '/auth/verify-mfa'
+    | '/dashboard/admin'
     | '/dashboard/blockchain'
     | '/dashboard/manufacturer'
     | '/dashboard/monitoring'
@@ -709,7 +764,10 @@ export interface FileRouteTypes {
     | '/dashboard/qr-library'
     | '/dashboard/regulator'
     | '/dashboard/settings'
+    | '/api/admin/batch-sequences'
     | '/api/admin/dashboard'
+    | '/api/admin/medicines'
+    | '/api/admin/recalls'
     | '/api/ai/insights'
     | '/api/auth/change-password'
     | '/api/auth/forgot-password'
@@ -746,8 +804,10 @@ export interface FileRouteTypes {
     | '/api/verify/history'
     | '/api/report/'
     | '/api/verify/'
+    | '/api/admin/medicines/$id'
     | '/api/admin/pharmacy/blacklist'
     | '/api/admin/recall/create'
+    | '/api/admin/recalls/$id'
     | '/api/manufacturer/batch/$id'
     | '/api/manufacturer/documents/$id'
     | '/api/manufacturer/documents/upload'
@@ -774,6 +834,7 @@ export interface FileRouteTypes {
     | '/auth/reset-password'
     | '/auth/signup'
     | '/auth/verify-mfa'
+    | '/dashboard/admin'
     | '/dashboard/blockchain'
     | '/dashboard/manufacturer'
     | '/dashboard/monitoring'
@@ -783,7 +844,10 @@ export interface FileRouteTypes {
     | '/dashboard/qr-library'
     | '/dashboard/regulator'
     | '/dashboard/settings'
+    | '/api/admin/batch-sequences'
     | '/api/admin/dashboard'
+    | '/api/admin/medicines'
+    | '/api/admin/recalls'
     | '/api/ai/insights'
     | '/api/auth/change-password'
     | '/api/auth/forgot-password'
@@ -820,8 +884,10 @@ export interface FileRouteTypes {
     | '/api/verify/history'
     | '/api/report'
     | '/api/verify'
+    | '/api/admin/medicines/$id'
     | '/api/admin/pharmacy/blacklist'
     | '/api/admin/recall/create'
+    | '/api/admin/recalls/$id'
     | '/api/manufacturer/batch/$id'
     | '/api/manufacturer/documents/$id'
     | '/api/manufacturer/documents/upload'
@@ -848,6 +914,7 @@ export interface FileRouteTypes {
     | '/auth/reset-password'
     | '/auth/signup'
     | '/auth/verify-mfa'
+    | '/dashboard/admin'
     | '/dashboard/blockchain'
     | '/dashboard/manufacturer'
     | '/dashboard/monitoring'
@@ -857,7 +924,10 @@ export interface FileRouteTypes {
     | '/dashboard/qr-library'
     | '/dashboard/regulator'
     | '/dashboard/settings'
+    | '/api/admin/batch-sequences'
     | '/api/admin/dashboard'
+    | '/api/admin/medicines'
+    | '/api/admin/recalls'
     | '/api/ai/insights'
     | '/api/auth/change-password'
     | '/api/auth/forgot-password'
@@ -894,8 +964,10 @@ export interface FileRouteTypes {
     | '/api/verify/history'
     | '/api/report/'
     | '/api/verify/'
+    | '/api/admin/medicines/$id'
     | '/api/admin/pharmacy/blacklist'
     | '/api/admin/recall/create'
+    | '/api/admin/recalls/$id'
     | '/api/manufacturer/batch/$id'
     | '/api/manufacturer/documents/$id'
     | '/api/manufacturer/documents/upload'
@@ -918,6 +990,7 @@ export interface RootRouteChildren {
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   VerifyLiteRoute: typeof VerifyLiteRoute
   ApiHealthRoute: typeof ApiHealthRouteWithChildren
+  DashboardAdminRoute: typeof DashboardAdminRoute
   DashboardBlockchainRoute: typeof DashboardBlockchainRoute
   DashboardManufacturerRoute: typeof DashboardManufacturerRoute
   DashboardMonitoringRoute: typeof DashboardMonitoringRoute
@@ -927,7 +1000,10 @@ export interface RootRouteChildren {
   DashboardQrLibraryRoute: typeof DashboardQrLibraryRoute
   DashboardRegulatorRoute: typeof DashboardRegulatorRoute
   DashboardSettingsRoute: typeof DashboardSettingsRoute
+  ApiAdminBatchSequencesRoute: typeof ApiAdminBatchSequencesRoute
   ApiAdminDashboardRoute: typeof ApiAdminDashboardRoute
+  ApiAdminMedicinesRoute: typeof ApiAdminMedicinesRouteWithChildren
+  ApiAdminRecallsRoute: typeof ApiAdminRecallsRouteWithChildren
   ApiAiInsightsRoute: typeof ApiAiInsightsRoute
   ApiAuthChangePasswordRoute: typeof ApiAuthChangePasswordRoute
   ApiAuthForgotPasswordRoute: typeof ApiAuthForgotPasswordRoute
@@ -1084,6 +1160,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard/blockchain'
       fullPath: '/dashboard/blockchain'
       preLoaderRoute: typeof DashboardBlockchainRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/admin': {
+      id: '/dashboard/admin'
+      path: '/dashboard/admin'
+      fullPath: '/dashboard/admin'
+      preLoaderRoute: typeof DashboardAdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth/verify-mfa': {
@@ -1380,11 +1463,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAiInsightsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/admin/recalls': {
+      id: '/api/admin/recalls'
+      path: '/api/admin/recalls'
+      fullPath: '/api/admin/recalls'
+      preLoaderRoute: typeof ApiAdminRecallsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/admin/medicines': {
+      id: '/api/admin/medicines'
+      path: '/api/admin/medicines'
+      fullPath: '/api/admin/medicines'
+      preLoaderRoute: typeof ApiAdminMedicinesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/admin/dashboard': {
       id: '/api/admin/dashboard'
       path: '/api/admin/dashboard'
       fullPath: '/api/admin/dashboard'
       preLoaderRoute: typeof ApiAdminDashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/admin/batch-sequences': {
+      id: '/api/admin/batch-sequences'
+      path: '/api/admin/batch-sequences'
+      fullPath: '/api/admin/batch-sequences'
+      preLoaderRoute: typeof ApiAdminBatchSequencesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/manufacturer/profile/logo-upload': {
@@ -1429,6 +1533,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiManufacturerBatchIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/admin/recalls/$id': {
+      id: '/api/admin/recalls/$id'
+      path: '/$id'
+      fullPath: '/api/admin/recalls/$id'
+      preLoaderRoute: typeof ApiAdminRecallsIdRouteImport
+      parentRoute: typeof ApiAdminRecallsRoute
+    }
     '/api/admin/recall/create': {
       id: '/api/admin/recall/create'
       path: '/api/admin/recall/create'
@@ -1442,6 +1553,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/admin/pharmacy/blacklist'
       preLoaderRoute: typeof ApiAdminPharmacyBlacklistRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/api/admin/medicines/$id': {
+      id: '/api/admin/medicines/$id'
+      path: '/$id'
+      fullPath: '/api/admin/medicines/$id'
+      preLoaderRoute: typeof ApiAdminMedicinesIdRouteImport
+      parentRoute: typeof ApiAdminMedicinesRoute
     }
     '/api/manufacturer/batch/$id/assets': {
       id: '/api/manufacturer/batch/$id/assets'
@@ -1511,6 +1629,29 @@ const ApiHealthRouteWithChildren = ApiHealthRoute._addFileChildren(
   ApiHealthRouteChildren,
 )
 
+interface ApiAdminMedicinesRouteChildren {
+  ApiAdminMedicinesIdRoute: typeof ApiAdminMedicinesIdRoute
+}
+
+const ApiAdminMedicinesRouteChildren: ApiAdminMedicinesRouteChildren = {
+  ApiAdminMedicinesIdRoute: ApiAdminMedicinesIdRoute,
+}
+
+const ApiAdminMedicinesRouteWithChildren =
+  ApiAdminMedicinesRoute._addFileChildren(ApiAdminMedicinesRouteChildren)
+
+interface ApiAdminRecallsRouteChildren {
+  ApiAdminRecallsIdRoute: typeof ApiAdminRecallsIdRoute
+}
+
+const ApiAdminRecallsRouteChildren: ApiAdminRecallsRouteChildren = {
+  ApiAdminRecallsIdRoute: ApiAdminRecallsIdRoute,
+}
+
+const ApiAdminRecallsRouteWithChildren = ApiAdminRecallsRoute._addFileChildren(
+  ApiAdminRecallsRouteChildren,
+)
+
 interface ApiManufacturerDocumentsRouteChildren {
   ApiManufacturerDocumentsIdRoute: typeof ApiManufacturerDocumentsIdRoute
   ApiManufacturerDocumentsUploadRoute: typeof ApiManufacturerDocumentsUploadRoute
@@ -1569,6 +1710,7 @@ const rootRouteChildren: RootRouteChildren = {
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   VerifyLiteRoute: VerifyLiteRoute,
   ApiHealthRoute: ApiHealthRouteWithChildren,
+  DashboardAdminRoute: DashboardAdminRoute,
   DashboardBlockchainRoute: DashboardBlockchainRoute,
   DashboardManufacturerRoute: DashboardManufacturerRoute,
   DashboardMonitoringRoute: DashboardMonitoringRoute,
@@ -1578,7 +1720,10 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardQrLibraryRoute: DashboardQrLibraryRoute,
   DashboardRegulatorRoute: DashboardRegulatorRoute,
   DashboardSettingsRoute: DashboardSettingsRoute,
+  ApiAdminBatchSequencesRoute: ApiAdminBatchSequencesRoute,
   ApiAdminDashboardRoute: ApiAdminDashboardRoute,
+  ApiAdminMedicinesRoute: ApiAdminMedicinesRouteWithChildren,
+  ApiAdminRecallsRoute: ApiAdminRecallsRouteWithChildren,
   ApiAiInsightsRoute: ApiAiInsightsRoute,
   ApiAuthChangePasswordRoute: ApiAuthChangePasswordRoute,
   ApiAuthForgotPasswordRoute: ApiAuthForgotPasswordRoute,

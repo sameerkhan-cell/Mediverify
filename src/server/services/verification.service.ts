@@ -15,7 +15,7 @@ export interface VerificationRequest {
 
 export interface VerificationResponse {
     success: boolean;
-    resultType: "GENUINE" | "FAKE" | "SUSPICIOUS" | "DUPLICATE" | "EXPIRED";
+    resultType: "GENUINE" | "FAKE" | "SUSPICIOUS" | "DUPLICATE" | "EXPIRED" | "RECALLED" | "UNVERIFIED";
     medicine?: any;
     manufacturer?: any;
     batch?: any;
@@ -62,7 +62,7 @@ export class VerificationEngine {
     // ═══════════════════════════════════
     // PART 2 — Anomaly Detection & Batch Verification
     // ═══════════════════════════════════
-    private static isAnomalous(batchNumber: string): { anomalous: boolean; reason: string; severity: "HIGH" | "MEDIUM" } {
+    private static async isAnomalous(batchNumber: string): Promise<{ anomalous: boolean; reason: string; severity: "HIGH" | "MEDIUM" }> {
         const parts = batchNumber.split("-");
         if (parts.length !== 3) {
             return { anomalous: true, reason: "Invalid batch number format.", severity: "HIGH" };
@@ -93,26 +93,109 @@ export class VerificationEngine {
             return { anomalous: true, reason: "Batch year " + year + " is unusually old.", severity: "MEDIUM" };
         }
 
+        // ── DRAP Intelligence Layer: check admin-entered BatchSequence ranges ──
+        const [prefix, , numStr] = parts;
+        const seqNum = parseInt(numStr, 10);
+
+        const knownSequence = await prisma.batchSequence.findFirst({
+            where: { prefix: prefix.toUpperCase(), year }
+        });
+
+        if (knownSequence) {
+            if (seqNum > knownSequence.maxSequence) {
+                return {
+                    anomalous: true,
+                    reason: `Batch sequence ${seqNum} exceeds known maximum of ${knownSequence.maxSequence} for ${prefix}-${year} (${knownSequence.confidence} confidence data).`,
+                    severity: knownSequence.confidence === "HIGH" ? "HIGH" : "MEDIUM"
+                };
+            }
+            if (seqNum < knownSequence.minSequence) {
+                return {
+                    anomalous: true,
+                    reason: `Batch sequence ${seqNum} is below minimum of ${knownSequence.minSequence} for ${prefix}-${year}.`,
+                    severity: "MEDIUM"
+                };
+            }
+            // Sequence is within known valid range — high-confidence genuine
+            return { anomalous: false, reason: "Sequence validated against DRAP intelligence database.", severity: "HIGH" };
+        }
+
+        // No BatchSequence data found — fall through to math-only result
         return { anomalous: false, reason: "", severity: "MEDIUM" };
     }
 
     private static async verifyBatchNumber(req: VerificationRequest): Promise<VerificationResponse> {
-        const check = this.isAnomalous(req.code);
+        const check = await this.isAnomalous(req.code);
 
         if (check.anomalous && check.severity === "HIGH") {
             return this.handleFakeResult(req, "FAKE DETECTED: " + check.reason);
         }
 
+        // ── STEP 1: DRAP Recall check (admin-entered recall alerts) ──────────────
+        const recallCheck = await prisma.dRAPRecall.findFirst({
+            where: {
+                isActive: true,
+                OR: [
+                    { batchNumber: req.code },
+                    { medicineName: { contains: req.code.split("-")[0] } }
+                ]
+            }
+        });
+
+        if (recallCheck) {
+            return {
+                ...this.handleFakeResult(req, `RECALLED: ${recallCheck.medicineName} — ${recallCheck.reason}. Severity: ${recallCheck.severity}. DRAP Ref: ${recallCheck.drapRef ?? "N/A"}`),
+                resultType: "RECALLED",
+                warnings: ["This medicine has been officially recalled by DRAP. Do NOT consume. Return to pharmacy immediately."]
+            };
+        }
+
+        // ── STEP 2: Look up batch in MediVerify blockchain ledger ────────────────
         const batch = await prisma.batch.findUnique({
             where: { batchNumber: req.code },
             include: { medicine: { include: { manufacturer: true } } }
         });
 
         if (!batch) {
+            // ── STEP 4: DRAP Medicine check when batch not in our system ──────────
+            const drapEntry = await prisma.medicine.findFirst({
+                where: {
+                    isPublicDRAPEntry: true,
+                    OR: [
+                        { drapRegNumber: { contains: req.code } },
+                        { name: { contains: req.code.split("-")[0] } }
+                    ]
+                }
+            });
+
             if (check.anomalous) {
-                return this.handleFakeResult(req, "SUSPICIOUS: " + check.reason + " Also not found in database.");
+                return this.handleFakeResult(req, "SUSPICIOUS: " + check.reason + " Additionally, this batch was not found in the MediVerify database.");
             }
-            return this.handleFakeResult(req, "Batch not found in MediVerify database.");
+
+            if (drapEntry) {
+                // Medicine is DRAP-registered but batch not in our system
+                return {
+                    success: true,
+                    resultType: "UNVERIFIED",
+                    medicine: drapEntry,
+                    manufacturer: null,
+                    batch: null,
+                    pill: null,
+                    verification: {
+                        id: "public-" + Date.now(),
+                        scanTime: new Date(),
+                        scanLocation: req.location || "Unknown",
+                        deviceInfo: req.deviceInfo || "Web",
+                        blockchainStatus: "NOT_APPLICABLE"
+                    },
+                    blockchain: { txHash: null, status: "NOT_APPLICABLE", verifiedOnChain: false },
+                    warnings: ["This medicine is registered with DRAP but this specific batch is not tracked in MediVerify. The medicine itself is legitimate but batch authenticity cannot be fully confirmed."],
+                    riskScore: 30,
+                    message: `${drapEntry.name} is DRAP registered (${drapEntry.drapRegNumber ?? "N/A"}) but this batch is not in MediVerify's blockchain registry. Exercise caution.`
+                };
+            }
+
+            return this.handleFakeResult(req, "This batch number was not found in the MediVerify database. The medicine may be unregistered — verify with DRAP at 0800-22222.");
         }
 
         const now = new Date();
