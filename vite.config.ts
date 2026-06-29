@@ -10,8 +10,8 @@ import { resolve } from "node:path";
 
 loadDotenv({ path: resolve(process.cwd(), ".env") });
 
-// Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
-// @cloudflare/vite-plugin builds from this — wrangler.jsonc main alone is insufficient.
+// Nitro preset is set to "vercel" so the build outputs to .vercel/output
+// which Vercel's deployment pipeline picks up automatically.
 export default defineConfig({
   tanstackStart: {
     server: { entry: "server" },
@@ -24,5 +24,8 @@ export default defineConfig({
         allowedHosts: ['all']
       }
     }
+  },
+  nitro: {
+    preset: "vercel",
   },
 });
