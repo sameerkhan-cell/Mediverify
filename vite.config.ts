@@ -10,11 +10,12 @@ import { resolve } from "node:path";
 
 loadDotenv({ path: resolve(process.cwd(), ".env") });
 
-// Nitro preset is set to "vercel" so the build outputs to .vercel/output
-// which Vercel's deployment pipeline picks up automatically.
+// NOTE: server.entry is intentionally NOT set here.
+// src/server.ts is a Cloudflare Workers-specific fetch wrapper — using it as
+// the Nitro entry on Vercel produces the wrong server bundle and causes 404s.
+// Nitro handles its own Vercel-compatible server entry automatically.
 export default defineConfig({
   tanstackStart: {
-    server: { entry: "server" },
     importProtection: {
       exclude: ["src/routes/api/**"],
     },
