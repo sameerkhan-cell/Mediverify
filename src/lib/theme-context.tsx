@@ -41,6 +41,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   };
 
   const applyTheme = (themeValue: Theme) => {
+    if (typeof window === "undefined") return; // SSR guard
     const root = window.document.documentElement;
     root.classList.remove("light", "dark");
 
@@ -63,6 +64,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, [location.pathname, user?.role]);
 
   const setTheme = (newTheme: Theme) => {
+    if (typeof window === "undefined") return; // SSR guard
     const currentPortal = getPortal(location.pathname);
     setThemeState(newTheme);
     localStorage.setItem(`theme-${currentPortal}`, newTheme);

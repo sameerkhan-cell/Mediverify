@@ -12,8 +12,10 @@ import type React from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
-// Register plugin once
-gsap.registerPlugin(ScrollTrigger);
+// Register plugin only in browser — SSR (Vercel Node.js) has no DOM
+if (typeof window !== "undefined") {
+  gsap.registerPlugin(ScrollTrigger);
+}
 
 // ── Shared easing ─────────────────────────────────────────────────────────────
 export const EASE_PREMIUM  = "power3.out";
