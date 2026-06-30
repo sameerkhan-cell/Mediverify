@@ -25,8 +25,19 @@ async function getServerEntry(): Promise<ServerEntry> {
   return serverEntryPromise;
 }
 
-function brandedErrorResponse(): Response {
-  return new Response(renderErrorPage(), {
+function brandedErrorResponse(error?: any): Response {
+  const errorMessage = error?.message || String(error || "Unknown Error");
+  const errorStack = error?.stack || "No stack trace available";
+  const debugHtml = `
+    ${renderErrorPage()}
+    <!-- DEBUG INFO -->
+    <div style="max-width: 60rem; margin: 2rem auto; padding: 2rem; background: #fff1f2; border: 1px solid #fecdd3; border-radius: 0.75rem; font-family: monospace; color: #9f1239; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+      <h3 style="margin-top:0;font-size:1.1rem;">🛠️ Server entry crash details</h3>
+      <p><strong>Message:</strong> ${errorMessage}</p>
+      <pre style="white-space: pre-wrap; font-size: 0.85rem; background: #fff; padding: 1rem; border-radius: 0.375rem; border: 1px solid #ffe4e6; overflow-x: auto;">${errorStack}</pre>
+    </div>
+  `;
+  return new Response(debugHtml, {
     status: 500,
     headers: { "content-type": "text/html; charset=utf-8" },
   });
@@ -70,7 +81,7 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
   }
 
   console.error(consumeLastCapturedError() ?? new Error(`h3 swallowed SSR error: ${body}`));
-  return brandedErrorResponse();
+  return brandedErrorResponse(consumeLastCapturedError() ?? new Error(`h3 swallowed SSR error: ${body}`));
 }
 
 export default {
@@ -81,7 +92,7 @@ export default {
       return await normalizeCatastrophicSsrResponse(response);
     } catch (error) {
       console.error(error);
-      return brandedErrorResponse();
+      return brandedErrorResponse(error);
     }
   },
 };
