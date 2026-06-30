@@ -24,8 +24,24 @@ export class AuthService {
             return await prisma.$transaction(async (tx) => {
                 // 4. Create User (IDs handled by default cuid() in schema)
                 // Normalize role (Map CUSTOMER -> PATIENT if needed)
-                let targetRole = role as Role;
-                if ((role as string) === "CUSTOMER") targetRole = Role.PATIENT;
+                let targetRole = Role.PATIENT;
+                if (role) {
+                    const normalized = String(role).toUpperCase();
+                    if (normalized === "CUSTOMER" || normalized === "PATIENT") {
+                        targetRole = Role.PATIENT;
+                    } else if (normalized === "PHARMACY") {
+                        targetRole = Role.PHARMACY;
+                    } else if (normalized === "MANUFACTURER") {
+                        targetRole = Role.MANUFACTURER;
+                    } else {
+                        // Allow other valid roles if necessary, though public signup should be restricted
+                        try {
+                            targetRole = normalized as Role;
+                        } catch (e) {
+                            targetRole = Role.PATIENT;
+                        }
+                    }
+                }
 
                 const user = await tx.user.create({
                     data: {
@@ -38,7 +54,7 @@ export class AuthService {
                 });
 
                 // 5. Initialize Profile based on role (Atomic)
-                if (role === "MANUFACTURER") {
+                if (targetRole === Role.MANUFACTURER) {
                     const companyCode = await this.generateCompanyCode(name);
                     await tx.manufacturer.create({
                         data: {
@@ -48,7 +64,7 @@ export class AuthService {
                             licenseNumber: `LIC-MFG-${user.id.slice(-6).toUpperCase()}`
                         } as any
                     });
-                } else if (role === "PHARMACY") {
+                } else if (targetRole === Role.PHARMACY) {
                     await tx.pharmacy.create({
                         data: {
                             userId: user.id,
