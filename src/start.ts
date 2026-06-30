@@ -7,7 +7,10 @@ const errorMiddleware = createMiddleware().server(async ({ next }) => {
     return await next();
   } catch (error: any) {
     if (error != null && typeof error === "object" && "statusCode" in error) {
-      throw error;
+      const code = (error as any).statusCode;
+      if (code !== 500) {
+        throw error;
+      }
     }
     console.error("SSR ERROR CAPTURED:", error);
     
