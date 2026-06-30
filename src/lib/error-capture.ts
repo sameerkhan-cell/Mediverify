@@ -20,6 +20,26 @@ if (typeof process !== "undefined" && typeof process.on === "function") {
   process.on("unhandledRejection", (reason) => record(reason));
 }
 
+// Intercept console.error to capture errors swallowed by the framework's internal try-catches
+const originalConsoleError = console.error;
+console.error = function (...args) {
+  for (const arg of args) {
+    if (arg instanceof Error) {
+      record(arg);
+      break;
+    } else if (arg && typeof arg === "object" && ("message" in arg || "stack" in arg)) {
+      const err = new Error((arg as any).message || "Object error");
+      err.stack = (arg as any).stack;
+      record(err);
+      break;
+    } else if (typeof arg === "string" && (arg.includes("Error") || arg.includes("stack") || arg.includes("at "))) {
+      record(new Error(arg));
+      break;
+    }
+  }
+  originalConsoleError.apply(console, args);
+};
+
 export function consumeLastCapturedError(): unknown {
   if (!lastCapturedError) return undefined;
   if (Date.now() - lastCapturedError.at > TTL_MS) {
