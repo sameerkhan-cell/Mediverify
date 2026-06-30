@@ -91,7 +91,7 @@ export function useBatchGeneration(): UseBatchGenerationReturn {
                     manufacturingDate: form.manufacturingDate ? new Date(form.manufacturingDate).toISOString() : new Date().toISOString(),
                     expiryDate: form.expiryDate ? new Date(form.expiryDate).toISOString() : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
                     quantityBoxes: form.quantityBoxes,
-                    pillsPerBox: form.totalPillsPerBox,
+                    pillsPerBox: form.pillsPerBox ?? form.totalPillsPerBox,
                     totalCartons: form.totalCartons,
                     category: form.productCategory,
                     allowsExtension: form.isExtension,
