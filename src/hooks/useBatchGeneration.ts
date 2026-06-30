@@ -88,13 +88,23 @@ export function useBatchGeneration(): UseBatchGenerationReturn {
                 body: JSON.stringify({
                     medicineName: form.medicineName,
                     batchNumber: form.batchNumber,
-                    manufacturingDate: form.manufacturingDate ? new Date(form.manufacturingDate).toISOString() : new Date().toISOString(),
-                    expiryDate: form.expiryDate ? new Date(form.expiryDate).toISOString() : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
-                    quantityBoxes: form.quantityBoxes,
-                    pillsPerBox: form.pillsPerBox ?? form.totalPillsPerBox,
-                    totalCartons: form.totalCartons,
+                    // Normalize date: type="month" gives "YYYY-MM" (no day), which Node.js
+                    // may parse as Invalid Date. Append "-01" only when needed.
+                    manufacturingDate: (() => {
+                        const d = form.manufacturingDate || "";
+                        const normalized = d.length === 7 ? `${d}-01` : d;
+                        return new Date(normalized).toISOString();
+                    })(),
+                    expiryDate: (() => {
+                        const d = form.expiryDate || "";
+                        const normalized = d.length === 7 ? `${d}-01` : d;
+                        return new Date(normalized).toISOString();
+                    })(),
+                    quantityBoxes: Number(form.quantityBoxes),
+                    pillsPerBox: Number(form.totalPillsPerBox),
+                    totalCartons: Number(form.totalCartons),
                     category: form.productCategory,
-                    allowsExtension: form.isExtension,
+                    allowsExtension: Boolean(form.isExtension),
                 })
             });
 
