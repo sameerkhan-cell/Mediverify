@@ -64,6 +64,18 @@ function LoginPage() {
   ];
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("expired") === "true") {
+      // Clear URL params to avoid showing the toast repeatedly on manual refreshes
+      window.history.replaceState({}, document.title, window.location.pathname);
+      toast.error("Session expired", {
+        description: "Your session has expired. Please sign in again.",
+        duration: 5000,
+      });
+    }
+  }, []);
+
+  useEffect(() => {
     if (isAuthenticated && user) {
       const role = user.role;
       if (role === "pharmacy") {

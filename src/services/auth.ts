@@ -62,6 +62,12 @@ async function handleResponse<T>(response: Response): Promise<AuthResponse<T>> {
     };
   }
   if (!response.ok) {
+    if (response.status === 401) {
+      clearSession();
+      if (typeof window !== "undefined" && !window.location.pathname.startsWith("/auth/")) {
+        window.location.href = "/auth/login?expired=true";
+      }
+    }
     return {
       success: false,
       error: { message: result.message || "An error occurred." },
