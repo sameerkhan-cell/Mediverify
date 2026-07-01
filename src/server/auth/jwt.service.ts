@@ -11,7 +11,7 @@ export interface TokenPayload {
 
 export class JwtService {
     static signAccessToken(payload: TokenPayload): string {
-        return jwt.sign(payload, JWT_SECRET, { expiresIn: "1h" });
+        return jwt.sign(payload, JWT_SECRET, { expiresIn: "7d" });
     }
 
     static signRefreshToken(payload: TokenPayload): string {

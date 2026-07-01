@@ -111,7 +111,7 @@ export const authService = {
             createdAt: new Date().toISOString(),
           },
           token: result.data.tokens.accessToken,
-          expiresAt: Date.now() + 60 * 60 * 1000,
+          expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000,
         };
         return { ...result, data: session, pendingMfa: false };
       }
@@ -158,7 +158,7 @@ export const authService = {
           createdAt: new Date().toISOString(),
         },
         token: result.data.tokens.accessToken,
-        expiresAt: Date.now() + 60 * 60 * 1000,
+        expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000,
       };
       return { ...result, data: session };
     }
@@ -262,7 +262,7 @@ export const authService = {
           createdAt: new Date().toISOString(),
         },
         token: result.data.tokens.accessToken,
-        expiresAt: Date.now() + 60 * 60 * 1000,
+        expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000,
       };
       return { ...result, data: session };
     }
