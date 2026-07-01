@@ -2,8 +2,6 @@ import { prisma } from "../db/client";
 import { ApiError } from "../utils/api-response";
 import nodemailer from "nodemailer";
 
-let transporter: nodemailer.Transporter | null = null;
-
 const PLACEHOLDER_PATTERNS = [
     /^your-email@/i,
     /^your-app-password$/i,
@@ -33,13 +31,15 @@ export function isSmtpConfigured(): boolean {
 
 function getMailerTransporter(): nodemailer.Transporter | null {
     if (!isSmtpConfigured()) return null;
-    if (transporter) return transporter;
 
     const host = process.env.SMTP_HOST!;
     const port = Number(process.env.SMTP_PORT);
     const secure = process.env.SMTP_SECURE === "true" || port === 465;
 
-    transporter = nodemailer.createTransport({
+    // Always create a fresh transporter — do NOT cache as a module-level
+    // singleton. In serverless environments (Vercel) the module may be
+    // initialised before env vars are available, permanently caching null.
+    return nodemailer.createTransport({
         host,
         port,
         secure,
@@ -49,8 +49,6 @@ function getMailerTransporter(): nodemailer.Transporter | null {
         },
         ...(port === 587 ? { requireTLS: true } : {}),
     });
-
-    return transporter;
 }
 
 export class MfaService {
