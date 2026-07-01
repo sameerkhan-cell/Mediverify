@@ -36,18 +36,25 @@ function getMailerTransporter(): nodemailer.Transporter | null {
     const port = Number(process.env.SMTP_PORT);
     const secure = process.env.SMTP_SECURE === "true" || port === 465;
 
-    // Always create a fresh transporter — do NOT cache as a module-level
-    // singleton. In serverless environments (Vercel) the module may be
-    // initialised before env vars are available, permanently caching null.
     return nodemailer.createTransport({
         host,
         port,
         secure,
+        // Force IPv4 — avoids ECONNREFUSED when the OS prefers IPv6
+        // but the network blocks it on the SMTP port
+        family: 4,
         auth: {
             user: process.env.SMTP_USER!,
             pass: process.env.SMTP_PASS!,
         },
+        // STARTTLS upgrade required on port 587
         ...(port === 587 ? { requireTLS: true } : {}),
+        tls: {
+            // Prevents "self-signed certificate in chain" errors
+            // that occur with Gmail in some Node.js environments
+            rejectUnauthorized: false,
+        },
+        connectionTimeout: 10000, // 10 s — safe for serverless
     });
 }
 
