@@ -4,7 +4,11 @@ import fs from "fs";
 import path from "path";
 
 export class QRService {
-    private static STORAGE_ROOT = path.join(process.cwd(), "storage", "qr-assets");
+    // Vercel's /var/task is read-only. Use /tmp (writable) in serverless,
+    // and the local storage directory in development.
+    private static STORAGE_ROOT = process.env.VERCEL
+        ? "/tmp/qr-assets"
+        : path.join(process.cwd(), "storage", "qr-assets");
     /**
      * Generate a QR code as a base64 data-URL (PNG).
      * Suitable for embedding in HTML / PDF.

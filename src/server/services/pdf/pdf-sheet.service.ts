@@ -11,7 +11,8 @@ export class PDFSheetService {
      */
     static async generateBatchPillSheet(batch: any, pills: any[]): Promise<Buffer> {
         const cacheFileName = `Sheet-${batch.batchNumber}-Industrial.pdf`;
-        const cacheDir = path.join(process.cwd(), "storage", "qr-assets", batch.id);
+        const storageRoot = process.env.VERCEL ? "/tmp/qr-assets" : path.join(process.cwd(), "storage", "qr-assets");
+        const cacheDir = path.join(storageRoot, batch.id);
         const cachePath = path.join(cacheDir, cacheFileName);
 
         /* 

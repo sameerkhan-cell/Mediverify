@@ -24,7 +24,8 @@ export const Route = createAPIFileRoute("/api/manufacturer/batch/$id")({
                     ? `Batch-${b.batchNumber}-Full-Registry.zip`
                     : `Sheet-${b.batchNumber}-Industrial.pdf`;
 
-                const cachePath = path.join(process.cwd(), "storage", "qr-assets", id, cacheFileName);
+                const storageRoot = process.env.VERCEL ? "/tmp/qr-assets" : path.join(process.cwd(), "storage", "qr-assets");
+                const cachePath = path.join(storageRoot, id, cacheFileName);
                 return new Response(JSON.stringify({ ready: fs.existsSync(cachePath) }), {
                     headers: { "Content-Type": "application/json" }
                 });
